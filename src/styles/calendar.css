@@ -324,6 +324,21 @@
   color: hsl(var(--foreground)) !important;
 }
 
+/* Force white/card background for all agenda cells and remove colored boxes */
+.rbc-agenda-view tbody tr td {
+  background-color: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.rbc-agenda-view .rbc-agenda-event-cell {
+  background-color: hsl(var(--card)) !important;
+}
+
+.rbc-agenda-view .rbc-agenda-event-cell * {
+  background-color: transparent !important;
+  color: hsl(var(--foreground)) !important;
+}
+
 /* Hide time range in agenda view since it's already in TIME column */
 .rbc-agenda-view .event-time-range {
   display: none !important;

@@ -813,7 +813,7 @@ const AddExam = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="file-upload">Upload Syllabus File (.txt, .pdf, .doc)</Label>
+                    <Label>Upload Syllabus File (.txt, .pdf, .doc)</Label>
                     {syllabusFile ? (
                       <div className="flex items-center gap-2 p-3 border rounded-md bg-accent/50">
                         <span className="flex-1 text-sm truncate">{syllabusFile.name}</span>
@@ -832,21 +832,47 @@ const AddExam = () => {
                         </Button>
                       </div>
                     ) : (
-                      <div 
-                        className="border-2 border-dashed rounded-md p-6 text-center cursor-pointer hover:border-primary hover:bg-accent/50 transition-colors"
-                        onClick={() => document.getElementById('file-upload')?.click()}
+                      <div
+                        className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary hover:bg-accent/50 transition-colors active:scale-[0.98]"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          document.getElementById('file-upload')?.click();
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.currentTarget.classList.add('border-primary', 'bg-accent/50');
+                        }}
+                        onDragLeave={(e) => {
+                          e.preventDefault();
+                          e.currentTarget.classList.remove('border-primary', 'bg-accent/50');
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.currentTarget.classList.remove('border-primary', 'bg-accent/50');
+                          const files = e.dataTransfer.files;
+                          if (files && files.length > 0) {
+                            const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+                            if (fileInput) {
+                              const dataTransfer = new DataTransfer();
+                              dataTransfer.items.add(files[0]);
+                              fileInput.files = dataTransfer.files;
+                              const event = new Event('change', { bubbles: true });
+                              fileInput.dispatchEvent(event);
+                            }
+                          }
+                        }}
                       >
-                        <Input
+                        <input
                           id="file-upload"
                           type="file"
                           accept=".txt,.pdf,.doc,.docx"
                           onChange={handleFileUpload}
-                          className="hidden"
+                          style={{ display: 'none' }}
                         />
-                        <p className="text-sm text-muted-foreground">
-                          Click to upload or drag and drop
+                        <p className="text-sm font-medium text-foreground">
+                          Click to Upload or Drag and Drop
                         </p>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-xs text-muted-foreground mt-2">
                           PDF, TXT, DOC, DOCX
                         </p>
                       </div>
