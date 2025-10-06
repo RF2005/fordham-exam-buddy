@@ -1,0 +1,348 @@
+/* Modern calendar styling inspired by Apple Calendar and Google Calendar */
+
+/* Main calendar container */
+.rbc-calendar {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', sans-serif;
+  background: hsl(var(--card));
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Toolbar styling */
+.rbc-toolbar {
+  padding: 16px 20px !important;
+  background: hsl(var(--background));
+  border-bottom: 1px solid hsl(var(--border));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.rbc-toolbar button {
+  padding: 8px 16px !important;
+  border-radius: 8px !important;
+  border: 1px solid hsl(var(--border)) !important;
+  background: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer;
+}
+
+.rbc-toolbar button:hover {
+  background: hsl(var(--accent)) !important;
+  border-color: hsl(var(--primary)) !important;
+}
+
+.rbc-toolbar button.rbc-active {
+  background: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  border-color: hsl(var(--primary)) !important;
+}
+
+/* Month view styling */
+.rbc-month-view {
+  background: hsl(var(--card));
+  border: none !important;
+}
+
+.rbc-header {
+  padding: 12px 8px !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  color: hsl(var(--muted-foreground)) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid hsl(var(--border)) !important;
+  background: hsl(var(--background));
+}
+
+/* Remove header boxes in week/day view */
+.rbc-time-view .rbc-header {
+  border: none !important;
+  background: transparent !important;
+  border-bottom: none !important;
+}
+
+.rbc-month-row {
+  border: none !important;
+  overflow: visible !important;
+  min-height: 80px;
+}
+
+.rbc-day-bg {
+  border: 1px solid hsl(var(--border)) !important;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+}
+
+.rbc-day-bg:hover {
+  background-color: hsl(var(--accent)) !important;
+}
+
+.rbc-off-range-bg {
+  background: hsl(var(--muted) / 0.3) !important;
+}
+
+.rbc-today {
+  background-color: transparent !important;
+  box-shadow: inset 0 0 0 2px hsl(var(--primary)) !important;
+}
+
+/* Subtle elevation effect for today in month view */
+.rbc-month-view .rbc-today {
+  background-color: hsl(var(--accent) / 0.3) !important;
+  box-shadow: 0 2px 8px hsl(var(--primary) / 0.15), inset 0 0 0 1px hsl(var(--primary) / 0.3) !important;
+}
+
+/* Remove today highlight in day view scrollable area */
+.rbc-time-view .rbc-day-slot.rbc-today {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Highlight today's header in week view */
+.rbc-time-view .rbc-header.rbc-today {
+  background-color: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  font-weight: 700 !important;
+  border-radius: 8px 8px 0 0 !important;
+}
+
+/* Calendar event styling */
+.rbc-event {
+  padding: 2px 4px !important;
+  font-size: 11px !important;
+  border-radius: 3px !important;
+  border: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 1px 2px !important;
+  width: calc(100% - 4px) !important;
+}
+
+.rbc-month-view .rbc-event {
+  max-height: 22px !important;
+  position: relative !important;
+  left: 0 !important;
+  right: 0 !important;
+}
+
+/* Week and day view event styling */
+.rbc-time-view .rbc-event {
+  border-radius: 4px !important;
+  padding: 4px 6px !important;
+  margin: 2px !important;
+  width: calc(100% - 4px) !important;
+  left: 0px !important;
+  right: 4px !important;
+}
+
+.rbc-time-view .rbc-event-content {
+  font-size: 12px !important;
+  white-space: normal !important;
+  line-height: 1.3 !important;
+}
+
+/* Ensure events stay within day slot boundaries */
+.rbc-events-container {
+  margin-right: 0 !important;
+}
+
+.rbc-event-label {
+  display: none !important;
+}
+
+.rbc-event-content {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2 !important;
+  text-align: center;
+  width: 100%;
+}
+
+/* Date cell styling */
+.rbc-date-cell {
+  padding: 6px 8px !important;
+  font-size: 14px !important;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.rbc-date-cell:hover {
+  background-color: hsl(var(--accent));
+  border-radius: 4px;
+}
+
+.rbc-date-cell.rbc-now {
+  font-weight: 700;
+}
+
+/* Week and Day views */
+.rbc-time-view {
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.rbc-time-header {
+  border-bottom: 2px solid hsl(var(--border)) !important;
+  padding-right: 8px !important;
+}
+
+.rbc-time-header-content {
+  border-left: 1px solid hsl(var(--border)) !important;
+}
+
+/* Hide the all-day event area */
+.rbc-allday-cell {
+  display: none !important;
+}
+
+.rbc-time-header-content > .rbc-row.rbc-row-resource {
+  display: none !important;
+}
+
+/* Add day separators */
+.rbc-day-slot {
+  border-left: 1px solid hsl(var(--border)) !important;
+}
+
+.rbc-day-slot:first-child {
+  border-left: none !important;
+}
+
+.rbc-time-content {
+  border-top: none !important;
+}
+
+.rbc-timeslot-group {
+  border-left: 1px solid hsl(var(--border)) !important;
+  min-height: 60px;
+}
+
+.rbc-time-slot {
+  border-top: 1px solid hsl(var(--border) / 0.5) !important;
+}
+
+.rbc-current-time-indicator {
+  display: none !important;
+}
+
+/* Agenda view */
+.rbc-agenda-view,
+.agenda-view-custom {
+  padding: 20px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.rbc-agenda-table,
+.agenda-view-custom .rbc-agenda-table {
+  width: 100%;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 8px;
+  overflow: hidden;
+  background: hsl(var(--card)) !important;
+  border-collapse: collapse;
+}
+
+/* Center-align headers and content in agenda view */
+.rbc-agenda-view .rbc-header,
+.agenda-view-custom .rbc-header {
+  text-align: center !important;
+  padding: 16px !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  background: hsl(var(--background)) !important;
+  border-bottom: 2px solid hsl(var(--border)) !important;
+}
+
+.rbc-agenda-date-cell,
+.rbc-agenda-time-cell,
+.rbc-agenda-event-cell,
+.rbc-agenda-location-cell {
+  padding: 12px 16px !important;
+  border-bottom: 1px solid hsl(var(--border)) !important;
+  background-color: hsl(var(--card)) !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Make rows clearly clickable */
+.agenda-view-custom tbody tr {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.agenda-view-custom tbody tr:hover {
+  background-color: hsl(var(--accent)) !important;
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px hsl(var(--primary) / 0.1);
+}
+
+.agenda-view-custom tbody tr:hover td {
+  background-color: transparent !important;
+  color: hsl(var(--primary)) !important;
+}
+
+/* Specific width for columns */
+.agenda-view-custom .rbc-agenda-date-cell {
+  width: 15%;
+}
+
+.agenda-view-custom .rbc-agenda-time-cell {
+  width: 20%;
+}
+
+.agenda-view-custom .rbc-agenda-event-cell {
+  width: 30%;
+}
+
+.agenda-view-custom .rbc-agenda-location-cell {
+  width: 35%;
+}
+
+/* Remove background colors from agenda events for better readability */
+.rbc-agenda-view .rbc-event {
+  background-color: transparent !important;
+  color: hsl(var(--foreground)) !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+.rbc-agenda-view .rbc-event-content {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Hide time range in agenda view since it's already in TIME column */
+.rbc-agenda-view .event-time-range {
+  display: none !important;
+}
+
+/* Scrollbar styling */
+.rbc-time-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.rbc-time-content::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+.rbc-time-content::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 4px;
+}
+
+.rbc-time-content::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
