@@ -8,8 +8,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Built with: Vite, React, TypeScript, Tailwind CSS, shadcn/ui, Supabase (backend + auth), React Query
 
-**Lovable Project URL**: https://lovable.dev/projects/87c00ef8-f288-4630-980e-de7379f90ff6
-
 ## Development Commands
 
 ```bash
@@ -62,7 +60,7 @@ npm run preview
 - `system_config`: Application configuration
 
 **Supabase Edge Functions** ([supabase/functions/](supabase/functions/)):
-- `parse-syllabus`: Uses Gemini 2.5 Pro (via Lovable AI Gateway) to extract exam dates from syllabus text/PDFs. Handles section-specific extraction and recurring quizzes.
+- `parse-syllabus`: Uses Gemini 2.5 Pro (via AI Gateway) to extract exam dates from syllabus text/PDFs. Handles section-specific extraction and recurring quizzes.
 - `send-exam-reminders`: Cron-triggered function that sends email reminders via Resend API based on user preferences
 - `test-send-reminders`: Manual testing endpoint for reminder functionality
 - `populate-courses`: Import course data into database
@@ -97,7 +95,7 @@ Required in `.env`:
 - `VITE_SUPABASE_ANON_KEY`: Supabase anonymous key
 
 Required in Supabase Edge Functions (set in Supabase dashboard):
-- `LOVABLE_API_KEY`: API key for Lovable AI Gateway (used for syllabus parsing)
+- `LOVABLE_API_KEY`: API key for AI Gateway (used for syllabus parsing with Gemini 2.5 Pro)
 - `RESEND_API_KEY`: Resend API key for email delivery
 - `CRON_SECRET`: Secret for authenticating cron jobs
 - `SUPABASE_URL`: Auto-provided by Supabase
@@ -122,8 +120,16 @@ Required in Supabase Edge Functions (set in Supabase dashboard):
 
 ## Deployment
 
-Deployment managed through Lovable platform. Changes pushed to this repo are automatically synced with Lovable. To deploy:
-1. Open Lovable project
-2. Click Share → Publish
+Build and deploy using standard Vite deployment workflow:
 
-Custom domains can be configured in Project > Settings > Domains.
+```bash
+npm run build
+```
+
+Deploy the `dist/` directory to any static hosting service:
+- Vercel
+- Netlify
+- GitHub Pages
+- Any static host
+
+For custom domains, configure through your hosting provider.

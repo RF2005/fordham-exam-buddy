@@ -1,73 +1,146 @@
-# Welcome to your Lovable project
+# Fordham Exam Buddy
 
-## Project info
+A React + TypeScript web application for Fordham University students to manage exam schedules with AI-powered syllabus parsing.
 
-**URL**: https://lovable.dev/projects/87c00ef8-f288-4630-980e-de7379f90ff6
+## Features
 
-## How can I edit this code?
+- 📝 **Multiple Exam Entry Methods**
+  - Manual entry with custom details
+  - Schedule lookup from Fordham's final exam database
+  - AI-powered syllabus parsing (PDF upload or text paste)
 
-There are several ways of editing your application.
+- 📅 **Smart Calendar Views**
+  - Month, Week, Day, and Agenda views
+  - Color-coded exams for easy organization
+  - Interactive event management
 
-**Use Lovable**
+- 🔔 **Email Reminders**
+  - Configurable reminder notifications
+  - Automatic delivery via Resend API
+  - Customizable days before exam
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/87c00ef8-f288-4630-980e-de7379f90ff6) and start prompting.
+- 🤖 **AI Integration**
+  - Gemini 2.5 Pro for syllabus parsing
+  - Intelligent date extraction
+  - Section-specific exam detection
 
-Changes made via Lovable will be committed automatically to this repo.
+## Tech Stack
 
-**Use your preferred IDE**
+- **Frontend**: Vite, React, TypeScript, Tailwind CSS, shadcn/ui
+- **Backend**: Supabase (PostgreSQL + Edge Functions)
+- **AI**: Google Gemini 2.5 Pro
+- **Calendar**: React Big Calendar
+- **PDF Processing**: PDF.js
+- **Email**: Resend API
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Getting Started
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Prerequisites
 
-Follow these steps:
+- Node.js & npm ([install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating))
+- Supabase account
+- Resend API key (for email reminders)
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+### Installation
+
+```bash
+# Clone the repository
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Navigate to project directory
+cd fordham-exam-buddy-main
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Install dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Environment Variables
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Create a `.env` file in the root directory:
 
-**Use GitHub Codespaces**
+```env
+VITE_SUPABASE_URL=your-supabase-url
+VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Supabase Edge Functions
 
-## What technologies are used for this project?
+Configure the following secrets in your Supabase dashboard:
 
-This project is built with:
+```
+LOVABLE_API_KEY=your-ai-gateway-key
+RESEND_API_KEY=your-resend-key
+CRON_SECRET=your-cron-secret
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Development
 
-## How can I deploy this project?
+```bash
+# Run development server
+npm run dev
 
-Simply open [Lovable](https://lovable.dev/projects/87c00ef8-f288-4630-980e-de7379f90ff6) and click on Share -> Publish.
+# Build for production
+npm run build
 
-## Can I connect a custom domain to my Lovable project?
+# Build for development
+npm run build:dev
 
-Yes, you can!
+# Lint code
+npm run lint
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+# Preview production build
+npm preview
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Project Structure
+
+```
+src/
+├── components/ui/      # shadcn/ui components
+├── hooks/              # Custom React hooks
+├── integrations/       # Supabase integration
+├── lib/                # Utility functions
+├── pages/              # Application pages
+├── styles/             # CSS styles
+└── assets/             # Images and static files
+
+supabase/
+├── functions/          # Edge Functions
+└── migrations/         # Database migrations
+```
+
+## Deployment
+
+### Build
+
+```bash
+npm run build
+```
+
+The build output will be in the `dist/` directory.
+
+### Deploy Options
+
+- **Vercel**: Connect your repo and deploy
+- **Netlify**: Drag and drop the `dist/` folder
+- **Any static hosting**: Upload contents of `dist/`
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## Documentation
+
+- [CLAUDE.md](CLAUDE.md) - Project guide for AI assistants
+- [REFACTORING_SUMMARY.md](REFACTORING_SUMMARY.md) - Recent refactoring changes
+
+## License
+
+This project is built for Fordham University students.
