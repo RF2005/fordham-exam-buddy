@@ -35,10 +35,11 @@ const Calendar = () => {
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/auth");
-        return;
-      }
+      // TEMPORARY: Bypass auth check for local development
+      // if (!session) {
+      //   navigate("/auth");
+      //   return;
+      // }
       await fetchCourses();
       fetchExams();
     };
@@ -46,8 +47,9 @@ const Calendar = () => {
     checkAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT') {
-        navigate("/auth");
+      // TEMPORARY: Bypass sign out redirect
+      // if (event === 'SIGNED_OUT') {
+      //   navigate("/auth");
       }
     });
 
