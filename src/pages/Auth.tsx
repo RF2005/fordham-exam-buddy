@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import fordhamLogo from '@/assets/Fordham_Rams_logo.svg.png';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -69,8 +70,8 @@ const Auth = () => {
 
       <Card className="w-full max-w-md relative z-10 backdrop-blur-xl bg-card/80 shadow-2xl border-border/50 animate-scale-in">
         <CardHeader className="text-center space-y-4 pb-6">
-          <div className="w-20 h-20 mx-auto bg-gradient-to-br from-primary to-primary/70 rounded-2xl flex items-center justify-center shadow-lg">
-            <span className="text-4xl font-bold text-primary-foreground">F</span>
+          <div className="w-24 h-24 mx-auto bg-white rounded-2xl flex items-center justify-center shadow-lg p-3">
+            <img src={fordhamLogo} alt="Fordham Rams" className="w-full h-full object-contain" />
           </div>
           <div className="space-y-2">
             <CardTitle className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-br from-foreground to-foreground/70">
