@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,26 +6,26 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 338 51% 20%;
+    --background: 0 0% 99%;
+    --foreground: 338 51% 15%;
     --card: 0 0% 100%;
     --card-foreground: 338 51% 20%;
     --popover: 0 0% 100%;
     --popover-foreground: 338 51% 20%;
     --primary: 338 51% 30%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 338 30% 95%;
+    --secondary: 338 30% 96%;
     --secondary-foreground: 338 51% 25%;
-    --muted: 338 15% 96%;
-    --muted-foreground: 338 20% 45%;
-    --accent: 338 45% 88%;
+    --muted: 338 10% 97%;
+    --muted-foreground: 338 15% 50%;
+    --accent: 338 40% 92%;
     --accent-foreground: 338 51% 25%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 338 15% 89%;
-    --input: 338 15% 89%;
+    --border: 338 10% 92%;
+    --input: 338 10% 94%;
     --ring: 338 51% 30%;
-    --radius: 0.75rem;
+    --radius: 0.875rem;
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 338 51% 26%;
     --sidebar-primary: 338 51% 30%;
@@ -37,33 +37,33 @@
   }
 
   .dark {
-    --background: 338 30% 8%;
-    --foreground: 0 0% 95%;
-    --card: 338 25% 12%;
-    --card-foreground: 0 0% 95%;
-    --popover: 338 25% 12%;
-    --popover-foreground: 0 0% 95%;
-    --primary: 338 51% 50%;
+    --background: 338 20% 6%;
+    --foreground: 0 0% 96%;
+    --card: 338 18% 10%;
+    --card-foreground: 0 0% 96%;
+    --popover: 338 18% 10%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 338 51% 55%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 338 20% 18%;
-    --secondary-foreground: 0 0% 95%;
-    --muted: 338 20% 20%;
-    --muted-foreground: 338 10% 60%;
-    --accent: 338 35% 25%;
-    --accent-foreground: 0 0% 95%;
+    --secondary: 338 15% 15%;
+    --secondary-foreground: 0 0% 96%;
+    --muted: 338 15% 18%;
+    --muted-foreground: 338 8% 65%;
+    --accent: 338 25% 20%;
+    --accent-foreground: 0 0% 96%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 338 20% 22%;
-    --input: 338 20% 22%;
-    --ring: 338 51% 50%;
-    --sidebar-background: 338 25% 10%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 338 51% 50%;
+    --border: 338 15% 20%;
+    --input: 338 15% 18%;
+    --ring: 338 51% 55%;
+    --sidebar-background: 338 20% 8%;
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-primary: 338 51% 55%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 338 20% 18%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 338 20% 22%;
-    --sidebar-ring: 338 51% 50%;
+    --sidebar-accent: 338 15% 15%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 338 15% 20%;
+    --sidebar-ring: 338 51% 55%;
   }
 }
 
@@ -71,8 +71,55 @@
   * {
     @apply border-border;
   }
+
   body {
-    @apply bg-background text-foreground;
-    font-family: 'Inter', sans-serif;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+
+  h1 {
+    @apply text-4xl md:text-5xl;
+  }
+
+  h2 {
+    @apply text-3xl md:text-4xl;
+  }
+
+  h3 {
+    @apply text-2xl md:text-3xl;
+  }
+
+  h4 {
+    @apply text-xl md:text-2xl;
+  }
+}
+
+@layer utilities {
+  .animate-in {
+    animation-duration: 0.3s;
+    animation-fill-mode: both;
+  }
+
+  .fade-in {
+    animation-name: fade-in;
+  }
+
+  .slide-in-from-bottom {
+    animation-name: slide-up;
+  }
+
+  .slide-in-from-top {
+    animation-name: slide-down;
+  }
+
+  .scale-in {
+    animation-name: scale-in;
   }
 }
