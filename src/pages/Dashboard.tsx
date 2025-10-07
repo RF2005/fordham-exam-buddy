@@ -24,11 +24,12 @@ const Dashboard = () => {
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/auth");
-        return;
-      }
-      setUser(session.user);
+      // TEMPORARY: Bypass auth check to see new UI locally
+      // if (!session) {
+      //   navigate("/auth");
+      //   return;
+      // }
+      setUser(session?.user || { email: 'demo@fordham.edu' });
       fetchExams();
     };
 
