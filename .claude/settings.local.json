@@ -5,9 +5,7 @@
       "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Enhance upload syllabus UI with drag-and-drop functionality\n\n## Upload Section Improvements\n- Updated upload box styling with dotted borders and larger padding\n- Changed text to \"Click to Upload or Drag and Drop\" (capitalized)\n- Replaced shadcn Input component with native input for better control\n- Removed htmlFor attribute from Label to prevent showing default file input\n\n## Drag and Drop Functionality\n- Added onDragOver, onDragLeave, and onDrop event handlers\n- Visual feedback when dragging files over upload area\n- Active scale effect on click for better UX\n- Proper file handling through DataTransfer API\n\n## Calendar Agenda View Fix\n- Fixed agenda view styling to show white backgrounds\n- Removed colored event boxes for better readability\n- Ensured text is visible with proper foreground colors\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(npm run build:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(pkill:*)",
-      "Bash(cat:*)"
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

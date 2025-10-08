@@ -121,11 +121,10 @@ const AddExam = () => {
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      // TEMPORARY: Bypass auth check for local development
-      // if (!session) {
-      //   navigate("/auth");
-      //   return;
-      // }
+      if (!session) {
+        navigate("/auth");
+        return;
+      }
 
       if (editId) {
         fetchExam(editId);
