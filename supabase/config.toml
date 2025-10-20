@@ -1,8 +1,5 @@
 project_id = "uyhnwiwbczjfzicaourj"
 
-[functions.parse-syllabus]
-verify_jwt = true
-
 [functions.send-exam-reminders]
 verify_jwt = false
 

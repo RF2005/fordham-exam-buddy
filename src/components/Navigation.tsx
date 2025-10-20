@@ -17,20 +17,24 @@ const Navigation = () => {
   return (
     <nav className="sticky top-0 z-50 border-b border-border/50 bg-card/80 backdrop-blur-xl shadow-sm">
       <div className="container mx-auto px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+        <div className="flex items-center justify-between h-20 gap-4">
           {/* Logo */}
           <div
-            className="flex items-center gap-3 cursor-pointer group"
+            className="flex items-center gap-3 cursor-pointer group min-w-0"
             onClick={() => navigate("/dashboard")}
           >
             <img
               src={logo}
               alt="Fordham Exam Planner"
-              className="h-14 transition-transform group-hover:scale-105"
+              className="h-12 md:h-14 w-auto flex-shrink-0 transition-transform group-hover:scale-105"
             />
-            <div className="hidden md:block">
-              <h1 className="text-xl font-bold text-foreground">Exam Planner</h1>
-              <p className="text-xs text-muted-foreground">Fordham University</p>
+            <div className="hidden md:flex flex-col leading-tight min-w-0">
+              <h1 className="text-lg lg:text-xl font-bold text-foreground truncate">
+                Exam Planner
+              </h1>
+              <p className="text-[11px] lg:text-xs text-muted-foreground truncate">
+                Fordham University
+              </p>
             </div>
           </div>
 

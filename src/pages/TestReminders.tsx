@@ -3,8 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import Navigation from "@/components/Navigation";
 
 const TestReminders = () => {
   const [loading, setLoading] = useState(false);
@@ -49,28 +50,24 @@ const TestReminders = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <nav className="border-b bg-card shadow-sm">
-        <div className="container mx-auto px-6 py-4">
-          <Button variant="outline" onClick={() => navigate("/dashboard")}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
-          </Button>
-        </div>
-      </nav>
+      <Navigation />
 
-      <main className="container mx-auto px-6 py-8 max-w-2xl">
-        <Card>
-          <CardHeader>
-            <CardTitle>Test Email Reminders</CardTitle>
-            <CardDescription>
-              Manually trigger the reminder system to test if emails are sent correctly.
-              This checks your current exams and sends reminders based on your notification preferences.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="bg-muted p-4 rounded-lg space-y-2">
-              <p className="text-sm font-medium">How it works:</p>
-              <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+      <main className="container mx-auto px-6 lg:px-8 py-8 lg:py-12 max-w-3xl">
+        {/* Header */}
+        <div className="mb-8 lg:mb-12 animate-slide-down">
+          <h1 className="text-4xl lg:text-5xl font-bold mb-3 tracking-tight">
+            Test Reminders
+          </h1>
+          <p className="text-base text-muted-foreground">
+            Manually trigger the reminder system to test email notifications
+          </p>
+        </div>
+
+        <Card className="animate-slide-up">
+          <CardContent className="pt-6 space-y-6">
+            <div className="bg-muted/50 p-6 rounded-xl space-y-3 border">
+              <p className="text-sm font-semibold">How it works:</p>
+              <ul className="text-sm text-muted-foreground list-disc list-inside space-y-2">
                 <li>Calculates days until each exam</li>
                 <li>Checks if any match your reminder day settings</li>
                 <li>Sends test emails to your configured @fordham.edu address</li>
@@ -87,7 +84,7 @@ const TestReminders = () => {
             </Button>
 
             {results && (
-              <Card>
+              <Card className="bg-accent/30 animate-fade-in">
                 <CardHeader>
                   <CardTitle className="text-lg">Test Results</CardTitle>
                 </CardHeader>

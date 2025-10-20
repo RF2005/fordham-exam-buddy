@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Fordham Exam Buddy** is a React + TypeScript web application for Fordham University students to manage exam schedules. Students can add exams manually, look them up from Fordham's final exam schedule database, or extract them from syllabus PDFs using AI. The app includes calendar visualization, automated email reminders, and multi-method exam entry.
+**Fordham Exam Buddy** is a React + TypeScript web application for Fordham University students to manage exam schedules. Students can add exams manually or look them up from Fordham's final exam schedule database. The app includes calendar visualization and automated email reminders.
 
 Built with: Vite, React, TypeScript, Tailwind CSS, shadcn/ui, Supabase (backend + auth), React Query
 
@@ -38,7 +38,7 @@ npm run preview
   - `Auth.tsx`: Authentication page
   - `Dashboard.tsx`: Main dashboard with exam list
   - `Calendar.tsx`: Calendar view of exams
-  - `AddExam.tsx`: Multi-method exam entry (manual, lookup, syllabus upload)
+  - `AddExam.tsx`: Two-method exam entry (manual and database lookup)
   - `TestReminders.tsx`: Reminder preferences management
 
 - **Routing** ([src/App.tsx](src/App.tsx)): React Router setup with routes for all pages. Auth page is the root route.
@@ -60,7 +60,6 @@ npm run preview
 - `system_config`: Application configuration
 
 **Supabase Edge Functions** ([supabase/functions/](supabase/functions/)):
-- `parse-syllabus`: Uses Gemini 2.5 Pro (via AI Gateway) to extract exam dates from syllabus text/PDFs. Handles section-specific extraction and recurring quizzes.
 - `send-exam-reminders`: Cron-triggered function that sends email reminders via Resend API based on user preferences
 - `test-send-reminders`: Manual testing endpoint for reminder functionality
 - `populate-courses`: Import course data into database
@@ -70,22 +69,15 @@ npm run preview
 
 ### Key Integration Points
 
-1. **Syllabus Parsing Flow**:
-   - User uploads PDF or pastes text in [AddExam.tsx](src/pages/AddExam.tsx)
-   - PDFs are parsed client-side using pdfjs-dist ([AddExam.tsx:217-292](src/pages/AddExam.tsx#L217))
-   - Text is sent to `parse-syllabus` edge function
-   - Function uses Gemini 2.5 Pro with structured output (function calling) to extract exam dates
-   - Results returned to UI for review/addition
-
-2. **Exam Reminder System**:
+1. **Exam Reminder System**:
    - Users set reminder_days array in notification_preferences table
    - `send-exam-reminders` edge function runs on cron (requires CRON_SECRET auth header)
    - Function queries upcoming exams and sends emails via Resend API
    - Email template includes exam details with Fordham branding
 
-3. **Final Exam Lookup**:
+2. **Final Exam Lookup**:
    - `final_exam_schedules` table pre-populated with Fordham's official schedule
-   - Users search by subject + course number ([AddExam.tsx:160-198](src/pages/AddExam.tsx#L160))
+   - Users search by subject + course number in [AddExam.tsx](src/pages/AddExam.tsx)
    - Results auto-populate exam form for quick entry
 
 ## Environment Variables
@@ -95,7 +87,6 @@ Required in `.env`:
 - `VITE_SUPABASE_ANON_KEY`: Supabase anonymous key
 
 Required in Supabase Edge Functions (set in Supabase dashboard):
-- `LOVABLE_API_KEY`: API key for AI Gateway (used for syllabus parsing with Gemini 2.5 Pro)
 - `RESEND_API_KEY`: Resend API key for email delivery
 - `CRON_SECRET`: Secret for authenticating cron jobs
 - `SUPABASE_URL`: Auto-provided by Supabase
@@ -104,7 +95,6 @@ Required in Supabase Edge Functions (set in Supabase dashboard):
 ## Supabase Configuration
 
 **Edge Function Settings** ([supabase/config.toml](supabase/config.toml)):
-- `parse-syllabus`: JWT verification enabled (requires user auth)
 - `send-exam-reminders`: JWT verification disabled (uses CRON_SECRET instead)
 - `test-send-reminders`: JWT verification enabled
 
