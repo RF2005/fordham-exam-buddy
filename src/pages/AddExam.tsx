@@ -7,11 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Search, PenTool, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, PenTool, ChevronDown, ChevronUp, Upload } from "lucide-react";
 import { z } from "zod";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import Navigation from "@/components/Navigation";
+import { parseSyllabusFile, ExtractedExam } from "@/utils/syllabusParser";
 
 const examSchema = z.object({
   course: z.string().min(1, "Course is required").max(100),
@@ -100,6 +101,12 @@ const AddExam = () => {
   const [lookupCourse, setLookupCourse] = useState('');
   const [lookupResults, setLookupResults] = useState<any[]>([]);
   const [lookupLoading, setLookupLoading] = useState(false);
+
+  // Syllabus upload state
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [extractedExams, setExtractedExams] = useState<ExtractedExam[]>([]);
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState('');
 
   // Reminder state
   const [reminderDays, setReminderDays] = useState<string>("");
@@ -299,7 +306,7 @@ const AddExam = () => {
         });
 
       if (error) throw error;
-      
+
       toast({
         title: "Reminders set",
         description: "Email reminders have been configured successfully"
@@ -311,6 +318,99 @@ const AddExam = () => {
         title: "Error setting reminders",
         description: error.message || "Could not save reminder preferences"
       });
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadedFile(file);
+    setUploadLoading(true);
+
+    try {
+      const exams = await parseSyllabusFile(file);
+
+      if (exams.length === 0) {
+        toast({
+          title: "No exams found",
+          description: "Could not find any exam dates in the uploaded file. Try manual entry instead."
+        });
+      } else {
+        setExtractedExams(exams);
+        toast({
+          title: "Syllabus parsed successfully",
+          description: `Found ${exams.length} exam date(s) in your syllabus`
+        });
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error parsing file",
+        description: error.message || "Failed to parse the uploaded file"
+      });
+      setExtractedExams([]);
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
+  const handleBulkAddExams = async () => {
+    if (extractedExams.length === 0) return;
+    if (!selectedCourse.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Course required",
+        description: "Please enter the course name before adding exams"
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/auth");
+        return;
+      }
+
+      const examRecords = extractedExams.map(exam => ({
+        course: selectedCourse,
+        title: exam.title,
+        exam_date: exam.date,
+        start_time: null,
+        end_time: null,
+        location: null,
+        notes: exam.notes || null,
+        color: '#821537',
+        user_id: session.user.id
+      }));
+
+      const { error } = await supabase
+        .from('exams')
+        .insert(examRecords);
+
+      if (error) throw error;
+
+      // Save reminder preferences if days are provided
+      if (reminderDays.trim()) {
+        await saveReminderPreferences(session.user.id);
+      }
+
+      toast({
+        title: "Exams added successfully",
+        description: `Added ${extractedExams.length} exam(s) to your schedule`
+      });
+
+      navigate("/dashboard");
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error adding exams",
+        description: error.message
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -332,7 +432,7 @@ const AddExam = () => {
         <Card className="animate-slide-up">
           <CardContent className="pt-6">
             <Tabs defaultValue="manual" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="manual">
                   <PenTool className="mr-2 h-4 w-4" />
                   Manual Entry
@@ -340,6 +440,10 @@ const AddExam = () => {
                 <TabsTrigger value="lookup">
                   <Search className="mr-2 h-4 w-4" />
                   Schedule Lookup
+                </TabsTrigger>
+                <TabsTrigger value="upload">
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload Syllabus
                 </TabsTrigger>
               </TabsList>
 
@@ -554,6 +658,112 @@ const AddExam = () => {
                         {loading ? 'Saving...' : 'Add Exam'}
                       </Button>
                     </form>
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="upload" className="space-y-4">
+                <div className="space-y-6">
+                  <div className="text-center space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      Upload your course syllabus (PDF, DOCX, or TXT) and we'll automatically extract exam dates
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="course-name">Course Name</Label>
+                    <Input
+                      id="course-name"
+                      placeholder="e.g., CISC 1600"
+                      value={selectedCourse}
+                      onChange={(e) => setSelectedCourse(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Enter the course name for all extracted exams
+                    </p>
+                  </div>
+
+                  <div className="border-2 border-dashed border-border rounded-lg p-8 text-center space-y-4 hover:border-primary/50 transition-colors">
+                    <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <div className="space-y-2">
+                      <Label htmlFor="file-upload" className="cursor-pointer">
+                        <span className="text-base font-semibold">Click to Upload or Drag and Drop</span>
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        PDF, DOCX, or TXT files
+                      </p>
+                    </div>
+                    <input
+                      id="file-upload"
+                      type="file"
+                      accept=".pdf,.docx,.doc,.txt"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                    {uploadedFile && (
+                      <p className="text-sm text-primary font-medium">
+                        Uploaded: {uploadedFile.name}
+                      </p>
+                    )}
+                  </div>
+
+                  {uploadLoading && (
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground">Parsing your syllabus...</p>
+                    </div>
+                  )}
+
+                  {extractedExams.length > 0 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <Label>Extracted Exam Dates ({extractedExams.length})</Label>
+                      </div>
+
+                      <div className="space-y-2 max-h-96 overflow-y-auto">
+                        {extractedExams.map((exam, index) => (
+                          <Card key={index} className="p-4">
+                            <div className="flex items-start justify-between">
+                              <div className="space-y-1 flex-1">
+                                <div className="font-semibold flex items-center gap-2">
+                                  {exam.title}
+                                  <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                                    {exam.type}
+                                  </span>
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {new Date(exam.date).toLocaleDateString('en-US', {
+                                    weekday: 'long',
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                  })}
+                                </div>
+                                {exam.notes && (
+                                  <div className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                                    {exam.notes}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+
+                      <ReminderSection
+                        reminderDays={reminderDays}
+                        setReminderDays={setReminderDays}
+                        idPrefix="upload"
+                      />
+
+                      <Button
+                        onClick={handleBulkAddExams}
+                        disabled={loading || !selectedCourse.trim()}
+                        className="w-full"
+                        size="lg"
+                      >
+                        {loading ? 'Adding Exams...' : `Add All ${extractedExams.length} Exam(s) to Schedule`}
+                      </Button>
+                    </div>
                   )}
                 </div>
               </TabsContent>
