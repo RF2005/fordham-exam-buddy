@@ -313,6 +313,7 @@ For questions regarding licensing, please contact the repository maintainer.
 ## Credits
 
 ### Development Team
+- **RF2005** - Lead Developer
 - Built with passion by students for students at Fordham University
 
 ### Technologies and Frameworks
