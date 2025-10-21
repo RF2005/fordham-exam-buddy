@@ -107,6 +107,7 @@ const AddExam = () => {
   const [extractedExams, setExtractedExams] = useState<ExtractedExam[]>([]);
   const [uploadLoading, setUploadLoading] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
 
   // Reminder state
   const [reminderDays, setReminderDays] = useState<string>("");
@@ -321,10 +322,7 @@ const AddExam = () => {
     }
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  const processFile = async (file: File) => {
     setUploadedFile(file);
     setUploadLoading(true);
 
@@ -353,6 +351,44 @@ const AddExam = () => {
     } finally {
       setUploadLoading(false);
     }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    await processFile(file);
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragging(false);
+
+    const file = event.dataTransfer.files?.[0];
+    if (!file) return;
+
+    const validTypes = ['.pdf', '.docx', '.doc', '.txt'];
+    const isValidType = validTypes.some(type => file.name.toLowerCase().endsWith(type));
+
+    if (!isValidType) {
+      toast({
+        variant: "destructive",
+        title: "Invalid file type",
+        description: "Please upload a PDF, DOCX, or TXT file"
+      });
+      return;
+    }
+
+    await processFile(file);
   };
 
   const handleBulkAddExams = async () => {
@@ -683,12 +719,22 @@ const AddExam = () => {
                     </p>
                   </div>
 
-                  <div className="border-2 border-dashed border-border rounded-lg p-8 text-center space-y-4 hover:border-primary/50 transition-colors">
+                  <div
+                    className={`border-2 border-dashed rounded-lg p-8 text-center space-y-4 transition-all cursor-pointer ${
+                      isDragging
+                        ? 'border-primary bg-primary/5 scale-[1.02]'
+                        : 'border-border hover:border-primary/50 hover:bg-accent/5'
+                    }`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={() => document.getElementById('file-upload')?.click()}
+                  >
                     <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
                     <div className="space-y-2">
-                      <Label htmlFor="file-upload" className="cursor-pointer">
+                      <div>
                         <span className="text-base font-semibold">Click to Upload or Drag and Drop</span>
-                      </Label>
+                      </div>
                       <p className="text-sm text-muted-foreground">
                         PDF, DOCX, or TXT files
                       </p>
@@ -699,6 +745,7 @@ const AddExam = () => {
                       accept=".pdf,.docx,.doc,.txt"
                       onChange={handleFileUpload}
                       className="hidden"
+                      onClick={(e) => e.stopPropagation()}
                     />
                     {uploadedFile && (
                       <p className="text-sm text-primary font-medium">
