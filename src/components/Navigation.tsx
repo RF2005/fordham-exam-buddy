@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Calendar, LayoutDashboard, Plus, LogOut, Bell } from "lucide-react";
+import { Calendar, LayoutDashboard, Plus, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import logo from '@/assets/logo.png';
 
@@ -58,15 +58,6 @@ const Navigation = () => {
               <Calendar className="h-4 w-4" />
               Calendar
             </Button>
-            <Button
-              variant={isActive("/test-reminders") ? "default" : "ghost"}
-              size="default"
-              onClick={() => navigate("/test-reminders")}
-              className="gap-2"
-            >
-              <Bell className="h-4 w-4" />
-              Reminders
-            </Button>
           </div>
 
           {/* Action Buttons */}
@@ -120,21 +111,13 @@ const Navigation = () => {
             Calendar
           </Button>
           <Button
-            variant={isActive("/test-reminders") ? "default" : "outline"}
-            size="sm"
-            onClick={() => navigate("/test-reminders")}
-            className="gap-2 flex-1"
-          >
-            <Bell className="h-3.5 w-3.5" />
-            Reminders
-          </Button>
-          <Button
             variant="outline"
             size="sm"
             onClick={handleSignOut}
-            className="gap-2"
+            className="gap-2 flex-1"
           >
             <LogOut className="h-3.5 w-3.5" />
+            Sign Out
           </Button>
         </div>
       </div>
