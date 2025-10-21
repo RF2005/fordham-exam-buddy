@@ -7,9 +7,10 @@ import { Calendar as BigCalendar, momentLocalizer, Views } from 'react-big-calen
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '@/styles/calendar.css';
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import Navigation from "@/components/Navigation";
+import { downloadICSFile } from "@/utils/calendarExport";
 
 const localizer = momentLocalizer(moment);
 
@@ -31,6 +32,7 @@ const Calendar = () => {
   const [view, setView] = useState<'month' | 'week' | 'day' | 'agenda'>('month');
   const [date, setDate] = useState(new Date());
   const [courseMap, setCourseMap] = useState<Map<string, string>>(new Map());
+  const [exams, setExams] = useState<Exam[]>([]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -84,6 +86,8 @@ const Calendar = () => {
         .order('exam_date', { ascending: true });
 
       if (error) throw error;
+
+      setExams(data || []);
 
       const calendarEvents: CalendarEvent[] = (data || []).map((exam) => {
         // Parse date as local date to avoid timezone shifts
@@ -295,12 +299,27 @@ const CustomAgenda = ({ events, date, courseMap }: { events: CalendarEvent[], da
       <main className="container mx-auto px-6 lg:px-8 py-8 lg:py-12 max-w-7xl animate-fade-in">
         {/* Header */}
         <div className="mb-8 lg:mb-12 animate-slide-down">
-          <h1 className="text-4xl lg:text-5xl font-bold mb-3 tracking-tight">
-            Calendar
-          </h1>
-          <p className="text-base text-muted-foreground">
-            View your exam schedule in calendar format
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-4xl lg:text-5xl font-bold mb-3 tracking-tight">
+                Calendar
+              </h1>
+              <p className="text-base text-muted-foreground">
+                View your exam schedule in calendar format
+              </p>
+            </div>
+            {exams.length > 0 && (
+              <Button
+                onClick={() => downloadICSFile(exams)}
+                variant="outline"
+                size="lg"
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Export to Calendar
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Calendar controls */}

@@ -2,15 +2,14 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Search, PenTool, ChevronDown, ChevronUp, Upload } from "lucide-react";
+import { Search, PenTool, Upload } from "lucide-react";
 import { z } from "zod";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import Navigation from "@/components/Navigation";
 import { parseSyllabusFile, ExtractedExam } from "@/utils/syllabusParser";
 
@@ -25,58 +24,6 @@ const examSchema = z.object({
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Invalid color format").optional()
 });
 
-const ReminderSection = ({ 
-  reminderDays, 
-  setReminderDays,
-  idPrefix = "reminder"
-}: { 
-  reminderDays: string; 
-  setReminderDays: (value: string) => void;
-  idPrefix?: string;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <div className="border rounded-lg bg-muted/50">
-        <CollapsibleTrigger asChild>
-          <button 
-            type="button"
-            className="w-full p-4 flex items-center justify-between hover:bg-muted/70 transition-colors"
-          >
-            <h3 className="font-semibold text-sm">Exam Reminders (Optional)</h3>
-            {isOpen ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
-          </button>
-        </CollapsibleTrigger>
-        
-        <CollapsibleContent>
-          <div className="px-4 pb-4 space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Reminders will be sent to your registered Fordham email address.
-            </p>
-            <div className="space-y-2">
-              <Label htmlFor={`${idPrefix}-days`}>Days before exam to send reminders</Label>
-              <Input
-                id={`${idPrefix}-days`}
-                type="text"
-                placeholder="e.g., 7, 3, 1"
-                value={reminderDays}
-                onChange={(e) => setReminderDays(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Enter numbers separated by commas (e.g., 7, 3, 1 for reminders 7 days, 3 days, and 1 day before)
-              </p>
-            </div>
-          </div>
-        </CollapsibleContent>
-      </div>
-    </Collapsible>
-  );
-};
 
 const AddExam = () => {
   const navigate = useNavigate();
@@ -109,12 +56,9 @@ const AddExam = () => {
   const [selectedCourse, setSelectedCourse] = useState('');
   const [isDragging, setIsDragging] = useState(false);
 
-  // Reminder state
-  const [reminderDays, setReminderDays] = useState<string>("");
-
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      await supabase.auth.getSession();
       // TEMPORARY: Bypass auth check for local development
       // if (!session) {
       //   navigate("/auth");
@@ -263,11 +207,6 @@ const AddExam = () => {
         });
       }
 
-      // Save reminder preferences if days are provided
-      if (reminderDays.trim()) {
-        await saveReminderPreferences(session.user.id);
-      }
-
       navigate("/dashboard");
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -288,39 +227,6 @@ const AddExam = () => {
     }
   };
 
-  const saveReminderPreferences = async (userId: string) => {
-    try {
-      const daysArray = reminderDays
-        .split(',')
-        .map(d => parseInt(d.trim()))
-        .filter(d => !isNaN(d) && d > 0 && d <= 365); // Reasonable limits
-
-      if (daysArray.length === 0) return;
-
-      const { error } = await supabase
-        .from('notification_preferences')
-        .upsert({
-          user_id: userId,
-          reminder_days: daysArray
-        }, {
-          onConflict: 'user_id'
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Reminders set",
-        description: "Email reminders have been configured successfully"
-      });
-    } catch (error: any) {
-      console.error("Error saving reminder preferences:", error);
-      toast({
-        variant: "destructive",
-        title: "Error setting reminders",
-        description: error.message || "Could not save reminder preferences"
-      });
-    }
-  };
 
   const processFile = async (file: File) => {
     setUploadedFile(file);
@@ -427,11 +333,6 @@ const AddExam = () => {
         .insert(examRecords);
 
       if (error) throw error;
-
-      // Save reminder preferences if days are provided
-      if (reminderDays.trim()) {
-        await saveReminderPreferences(session.user.id);
-      }
 
       toast({
         title: "Exams added successfully",
@@ -576,12 +477,6 @@ const AddExam = () => {
                     </div>
                   </div>
 
-                  <ReminderSection 
-                    reminderDays={reminderDays}
-                    setReminderDays={setReminderDays}
-                    idPrefix="manual"
-                  />
-
                   <Button type="submit" disabled={loading} className="w-full" size="lg">
                     {loading ? 'Saving...' : editId ? 'Update Exam' : 'Add Exam'}
                   </Button>
@@ -611,13 +506,7 @@ const AddExam = () => {
                     </div>
                   </div>
 
-                  <ReminderSection 
-                    reminderDays={reminderDays}
-                    setReminderDays={setReminderDays}
-                    idPrefix="lookup"
-                  />
-
-                  <Button 
+                  <Button
                     onClick={handleLookup} 
                     disabled={lookupLoading}
                     className="w-full"
@@ -795,12 +684,6 @@ const AddExam = () => {
                           </Card>
                         ))}
                       </div>
-
-                      <ReminderSection
-                        reminderDays={reminderDays}
-                        setReminderDays={setReminderDays}
-                        idPrefix="upload"
-                      />
 
                       <Button
                         onClick={handleBulkAddExams}

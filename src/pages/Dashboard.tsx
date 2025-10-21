@@ -6,9 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
 import { format, isWithinInterval, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
-import { Calendar, Plus, Trash2, Edit, Clock, AlertCircle, TrendingUp } from "lucide-react";
+import { Calendar, Plus, Trash2, Edit, Clock, AlertCircle, TrendingUp, Download } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import Navigation from "@/components/Navigation";
+import { downloadICSFile } from "@/utils/calendarExport";
 
 type Exam = Database['public']['Tables']['exams']['Row'];
 
@@ -211,12 +212,27 @@ const Dashboard = () => {
       <main className="container mx-auto px-6 lg:px-8 py-8 lg:py-12 max-w-7xl">
         {/* Header */}
         <div className="mb-8 lg:mb-12 animate-slide-down">
-          <h1 className="text-4xl lg:text-5xl font-bold mb-3 tracking-tight">
-            Your Exams
-          </h1>
-          <p className="text-base text-muted-foreground">
-            {user?.email && `Logged in as ${user.email}`}
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-4xl lg:text-5xl font-bold mb-3 tracking-tight">
+                Your Exams
+              </h1>
+              <p className="text-base text-muted-foreground">
+                {user?.email && `Logged in as ${user.email}`}
+              </p>
+            </div>
+            {exams.length > 0 && (
+              <Button
+                onClick={() => downloadICSFile(exams)}
+                variant="outline"
+                size="lg"
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Export to Calendar
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Stats Cards */}

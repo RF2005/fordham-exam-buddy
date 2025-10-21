@@ -7,7 +7,6 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
 import AddExam from "./pages/AddExam";
-import TestReminders from "./pages/TestReminders";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,7 +23,6 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/add-exam" element={<AddExam />} />
-          <Route path="/test-reminders" element={<TestReminders />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
