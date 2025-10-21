@@ -1,9 +1,10 @@
 # Fordham Exam Buddy
 
-A modern web application designed for Fordham University students to efficiently manage their exam schedules. Built with React and TypeScript, Exam Buddy provides two convenient ways to add exams—manual entry or lookup from Fordham's official final exam database. The app features calendar visualization with multiple view options and automated email reminders to help students stay organized throughout the semester.
+A modern web application designed for Fordham University students to efficiently manage their exam schedules. Built with React and TypeScript, Exam Buddy provides three convenient ways to add exams—manual entry, lookup from Fordham's official final exam database, or automatic extraction from uploaded syllabi. The app features calendar visualization with multiple view options and automated email reminders to help students stay organized throughout the semester.
 
 **Main Features:**
-- Two exam entry methods (manual entry and database lookup)
+- Three exam entry methods (manual entry, database lookup, and syllabus upload)
+- AI-powered syllabus parsing that automatically extracts exam dates from PDF, DOCX, and TXT files
 - Interactive calendar with month, week, day, and agenda views
 - Configurable email reminders for upcoming exams
 - Color-coded exam organization
@@ -95,7 +96,7 @@ npm run preview      # Preview production build locally
 
 2. **Adding Exams**
 
-   Navigate to the "Add Exam" page where you'll find two methods:
+   Navigate to the "Add Exam" page where you'll find three methods:
 
    **Method 1: Manual Entry**
    ```typescript
@@ -115,6 +116,32 @@ npm run preview      # Preview production build locally
    2. Enter course number (e.g., "1600")
    3. Select your course from results
    4. Exam details auto-populate
+   ```
+
+   **Method 3: Upload Syllabus (NEW!)**
+   ```typescript
+   // Automatically extract exam dates from your syllabus:
+   1. Enter the course name (e.g., "CISC 1600")
+   2. Upload your syllabus file (PDF, DOCX, or TXT)
+   3. Review automatically extracted exam dates
+   4. Add all exams to your schedule with one click
+
+   // Supported file types:
+   - PDF (.pdf)
+   - Word Documents (.docx, .doc)
+   - Text Files (.txt)
+
+   // Automatically detects:
+   - Exams and Final Exams
+   - Midterms
+   - Tests and Quizzes
+   - Projects and Presentations
+
+   // Supported date formats:
+   - MM/DD/YYYY (e.g., 01/15/2025)
+   - Month DD, YYYY (e.g., January 15, 2025)
+   - Mon DD, YYYY (e.g., Jan 15, 2025)
+   - DD Month YYYY (e.g., 15 January 2025)
    ```
 
 3. **Viewing Your Calendar**
@@ -299,6 +326,8 @@ For questions regarding licensing, please contact the repository maintainer.
 - [React Big Calendar](https://jquense.github.io/react-big-calendar/) - Calendar component
 - [React Query](https://tanstack.com/query/latest) - Data fetching and state management
 - [date-fns](https://date-fns.org/) - Date utility library
+- [PDF.js](https://mozilla.github.io/pdf.js/) - PDF parsing library
+- [Mammoth.js](https://github.com/mwilliamson/mammoth.js) - DOCX parsing library
 
 **Backend:**
 - [Supabase](https://supabase.com/) - Backend-as-a-Service (PostgreSQL, Auth, Edge Functions)
