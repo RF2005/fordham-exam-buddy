@@ -1,5 +1,7 @@
 # Fordham Exam Buddy
 
+🔗 **Live Application:** [https://fordhamexambuddy.vercel.app/](https://fordhamexambuddy.vercel.app/)
+
 A modern web application designed for Fordham University students to efficiently manage their exam schedules. Built with React and TypeScript, Exam Buddy provides three convenient ways to add exams—manual entry, lookup from Fordham's official final exam database, or automatic extraction from uploaded syllabi. The app features calendar visualization with multiple view options and automated email reminders to help students stay organized throughout the semester.
 
 **Main Features:**
@@ -8,6 +10,16 @@ A modern web application designed for Fordham University students to efficiently
 - Interactive calendar with month, week, day, and agenda views
 - Configurable email reminders for upcoming exams
 - Color-coded exam organization
+
+## Quick Start
+
+**For Students:**
+1. Visit [https://fordhamexambuddy.vercel.app/](https://fordhamexambuddy.vercel.app/)
+2. Sign in with your Fordham Google account (@fordham.edu)
+3. Start managing your exam schedule!
+
+**For Developers:**
+See [Installation Instructions](#installation-instructions) below to run locally.
 
 ## Table of Contents
 
