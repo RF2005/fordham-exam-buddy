@@ -1,4 +1,4 @@
-project_id = "uyhnwiwbczjfzicaourj"
+project_id = "zvbqoaxkckrojvpxfuuf"
 
 [functions.send-exam-reminders]
 verify_jwt = false
