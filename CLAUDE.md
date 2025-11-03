@@ -71,9 +71,9 @@ npm run preview
 1. **Syllabus Parsing with OCR**:
    - Users can upload PDF, DOCX, TXT, or image files (PNG, JPG)
    - Digital PDFs: Extracted using pdfjs-dist (fast, client-side)
-   - Scanned PDFs/Images: Fallback to OCR via `ocr-extract` edge function
-   - Extracted text is parsed by AI (Chrome Built-in AI or OpenAI GPT-4o-mini)
-   - Flow: Upload → Text Extraction (OCR if needed) → AI Parsing → Display Results
+   - Scanned PDFs/Images: Fallback to OCR via `ocr-extract` edge function (PaddleOCR)
+   - Extracted text is parsed using built-in regex pattern matching
+   - Flow: Upload → Text Extraction (OCR if needed) → Regex Parsing → Display Results
    - Files: [syllabusParser.ts](src/utils/syllabusParser.ts), [ocrService.ts](src/utils/ocrService.ts), [hybridAiParser.ts](src/utils/hybridAiParser.ts)
 
 2. **Final Exam Lookup**:

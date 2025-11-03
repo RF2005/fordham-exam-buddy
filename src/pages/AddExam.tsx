@@ -58,7 +58,6 @@ const AddExam = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [pastedText, setPastedText] = useState('');
   const [sectionNumber, setSectionNumber] = useState('');
-  const [openaiApiKey, setOpenaiApiKey] = useState('');
 
   useEffect(() => {
     if (editId) {
@@ -248,7 +247,7 @@ const AddExam = () => {
       console.log('Extracted text from file, length:', text.length);
 
       // Use smart hybrid parser
-      const result = await parseWithBestAvailableAI(text, sectionNumber, openaiApiKey);
+      const result = await parseWithBestAvailableAI(text, sectionNumber);
       console.log('Parsed exams:', result);
 
       if (result.exams.length === 0) {
@@ -310,7 +309,7 @@ const AddExam = () => {
     setUploadLoading(true);
     try {
       // Use smart hybrid parser
-      const result = await parseWithBestAvailableAI(pastedText, sectionNumber, openaiApiKey);
+      const result = await parseWithBestAvailableAI(pastedText, sectionNumber);
 
       if (result.exams.length === 0) {
         toast({
@@ -683,24 +682,10 @@ const AddExam = () => {
                 <div className="space-y-6">
                   <div className="text-center space-y-2">
                     <p className="text-sm text-muted-foreground">
-                      Upload your course syllabus (PDF, DOCX, TXT, or image) and we'll automatically extract exam dates using AI + OCR
+                      Upload your course syllabus (PDF, DOCX, TXT, or image) and we'll automatically extract exam dates using OCR
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Scanned PDFs and photos of syllabi are supported
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="openai-key">OpenAI API Key (Optional)</Label>
-                    <Input
-                      id="openai-key"
-                      type="password"
-                      placeholder="sk-... (optional - for better accuracy)"
-                      value={openaiApiKey}
-                      onChange={(e) => setOpenaiApiKey(e.target.value)}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      For best results, add your OpenAI API key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">platform.openai.com</a>. New users get $5 free credit.
+                      Scanned PDFs and photos of syllabi are supported via PaddleOCR
                     </p>
                   </div>
 
