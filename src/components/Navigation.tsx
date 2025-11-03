@@ -32,9 +32,6 @@ const Navigation = () => {
               <h1 className="text-lg lg:text-xl font-bold text-foreground truncate">
                 Exam Planner
               </h1>
-              <p className="text-[11px] lg:text-xs text-muted-foreground truncate">
-                Fordham University
-              </p>
             </div>
           </div>
 
