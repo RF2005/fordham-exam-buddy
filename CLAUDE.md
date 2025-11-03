@@ -60,9 +60,10 @@ npm run preview
 - `system_config`: Application configuration
 
 **Supabase Edge Functions** ([supabase/functions/](supabase/functions/)):
-- `ocr-extract`: OCR extraction service for scanned PDFs and images using PaddleOCR API
 - `populate-courses`: Import course data into database
 - `import-all-courses`: Batch course import
+
+Note: OCR functionality is handled client-side by Tesseract.js - no Edge Function needed.
 
 **Authentication**: Supabase Auth with email/password. Session checks in pages enforce authentication.
 
@@ -71,9 +72,9 @@ npm run preview
 1. **Syllabus Parsing with OCR**:
    - Users can upload PDF, DOCX, TXT, or image files (PNG, JPG)
    - Digital PDFs: Extracted using pdfjs-dist (fast, client-side)
-   - Scanned PDFs/Images: Fallback to OCR via `ocr-extract` edge function (PaddleOCR)
-   - Extracted text is parsed using built-in regex pattern matching
-   - Flow: Upload → Text Extraction (OCR if needed) → Regex Parsing → Display Results
+   - Scanned PDFs/Images: OCR via Tesseract.js (browser-based, free, no API needed)
+   - Extracted text is parsed using strict same-line pattern matching
+   - Flow: Upload → Text Extraction (Tesseract.js OCR if needed) → Same-Line Parsing → Display Results
    - Files: [syllabusParser.ts](src/utils/syllabusParser.ts), [ocrService.ts](src/utils/ocrService.ts), [hybridAiParser.ts](src/utils/hybridAiParser.ts)
 
 2. **Final Exam Lookup**:
@@ -92,21 +93,11 @@ Required in `.env`:
 - `VITE_SUPABASE_URL`: Supabase project URL
 - `VITE_SUPABASE_ANON_KEY`: Supabase anonymous key
 
-Required in Supabase Edge Functions (set in Supabase dashboard):
-- `PADDLEOCR_API_KEY`: PaddleOCR API key for OCR text extraction
-- `PADDLEOCR_API_URL`: PaddleOCR API endpoint URL
-- `SUPABASE_URL`: Auto-provided by Supabase
-- `SUPABASE_SERVICE_ROLE_KEY`: Auto-provided by Supabase
-
-Note: To set up OCR functionality:
-1. Sign up at https://paddleocr.com for API access
-2. Add API credentials to Supabase Edge Functions secrets
-3. Deploy the `ocr-extract` edge function: `supabase functions deploy ocr-extract`
+No additional environment variables needed for OCR - Tesseract.js runs entirely in the browser with no API keys or server setup required.
 
 ## Supabase Configuration
 
-**Edge Function Settings** ([supabase/config.toml](supabase/config.toml)):
-- `ocr-extract`: JWT verification enabled (requires user authentication)
+No special Edge Function configuration needed for OCR (handled client-side).
 
 ## Important Patterns
 

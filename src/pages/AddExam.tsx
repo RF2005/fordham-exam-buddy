@@ -253,7 +253,7 @@ const AddExam = () => {
       if (result.exams.length === 0) {
         toast({
           title: "No exams found",
-          description: "AI could not find any exam dates. Try manual entry instead."
+          description: "Could not find any exam dates. Try manual entry instead."
         });
       } else {
         // Convert to ExtractedExam format
@@ -266,7 +266,7 @@ const AddExam = () => {
 
         setExtractedExams(convertedExams);
         toast({
-          title: `Parsed with ${getParserName(result.parserUsed)}!`,
+          title: "Parsing complete",
           description: `Found ${result.exams.length} exam date(s) in your syllabus`
         });
       }
@@ -314,7 +314,7 @@ const AddExam = () => {
       if (result.exams.length === 0) {
         toast({
           title: "No exams found",
-          description: "AI could not find any exam dates. Try manual entry instead."
+          description: "Could not find any exam dates. Try manual entry instead."
         });
       } else {
         // Convert to ExtractedExam format
@@ -328,15 +328,15 @@ const AddExam = () => {
         setExtractedExams(convertedExams);
         setUploadedFile(null);
         toast({
-          title: `Parsed with ${getParserName(result.parserUsed)}!`,
-          description: `Found ${result.exams.length} exam date(s) using AI`
+          title: "Parsing complete",
+          description: `Found ${result.exams.length} exam date(s)`
         });
       }
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "AI parsing failed",
-        description: error.message || "Failed to parse with AI"
+        title: "Parsing failed",
+        description: error.message || "Failed to parse text"
       });
       setExtractedExams([]);
     } finally {
@@ -682,10 +682,10 @@ const AddExam = () => {
                 <div className="space-y-6">
                   <div className="text-center space-y-2">
                     <p className="text-sm text-muted-foreground">
-                      Upload your course syllabus (PDF, DOCX, TXT, or image) and we'll automatically extract exam dates using OCR
+                      Upload your course syllabus (PDF, DOCX, TXT, or image) and we'll automatically extract exam dates
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Scanned PDFs and photos of syllabi are supported via PaddleOCR
+                      Scanned PDFs and photos are supported
                     </p>
                   </div>
 
@@ -758,10 +758,10 @@ const AddExam = () => {
                         handleAIParseFile();
                       }}
                       disabled={uploadLoading}
-                      className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                      className="w-full"
                       size="lg"
                     >
-                      {uploadLoading ? 'AI Parsing...' : '✨ Parse with AI'}
+                      {uploadLoading ? 'Parsing...' : 'Parse Syllabus'}
                     </Button>
                   )}
 
@@ -799,10 +799,10 @@ Final Exam - December 10, 2024"
                     <Button
                       onClick={handleAIParse}
                       disabled={uploadLoading || !pastedText.trim()}
-                      className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                      className="w-full"
                       size="lg"
                     >
-                      {uploadLoading ? 'AI Parsing...' : '✨ Parse with AI'}
+                      {uploadLoading ? 'Parsing...' : 'Parse Text'}
                     </Button>
                   </div>
 

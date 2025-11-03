@@ -1,52 +1,34 @@
-import { supabase } from '@/integrations/supabase/client';
+import Tesseract from 'tesseract.js';
 
 /**
- * Extract text from an image or scanned PDF using OCR via Supabase Edge Function
+ * Extract text from an image or PDF using Tesseract.js (browser-based OCR)
  */
 export async function extractTextWithOCR(file: File): Promise<string> {
-  console.log('Using OCR to extract text from:', file.name);
+  console.log('Using Tesseract.js OCR to extract text from:', file.name);
 
-  // Get auth token
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    throw new Error('Must be logged in to use OCR');
-  }
+  try {
+    const { data: { text } } = await Tesseract.recognize(
+      file,
+      'eng',
+      {
+        logger: (m) => {
+          if (m.status === 'recognizing text') {
+            console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
+          }
+        }
+      }
+    );
 
-  // Prepare form data
-  const formData = new FormData();
-  formData.append('file', file);
-
-  // Get Supabase URL from environment
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  if (!supabaseUrl) {
-    throw new Error('Supabase URL not configured');
-  }
-
-  // Call edge function
-  const response = await fetch(
-    `${supabaseUrl}/functions/v1/ocr-extract`,
-    {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${session.access_token}`
-      },
-      body: formData
+    if (!text || text.trim().length === 0) {
+      throw new Error('No text could be extracted from the file. Please ensure the image is clear and readable.');
     }
-  );
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'OCR extraction failed' }));
-    throw new Error(error.error || error.message || 'OCR extraction failed');
+    console.log(`Tesseract.js extracted ${text.length} characters`);
+    return text;
+  } catch (error: any) {
+    console.error('Tesseract.js OCR error:', error);
+    throw new Error(`OCR extraction failed: ${error.message || 'Unknown error'}`);
   }
-
-  const result = await response.json();
-
-  if (!result.text || result.text.length === 0) {
-    throw new Error('No text could be extracted from the file. Please ensure the image is clear and readable.');
-  }
-
-  console.log(`OCR extracted ${result.text.length} characters`);
-  return result.text;
 }
 
 /**

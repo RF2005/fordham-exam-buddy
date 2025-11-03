@@ -45,7 +45,7 @@ export async function parseSyllabusFile(file: File): Promise<string> {
 }
 
 /**
- * Parse raw text and extract exam dates
+ * Parse raw text and extract exam dates using STRICT same-line matching
  */
 export function parseSyllabusText(text: string): ExtractedExam[] {
   if (!text || text.trim().length === 0) {
@@ -116,112 +116,102 @@ async function parseTXT(file: File): Promise<string> {
 }
 
 /**
- * Extract exam dates and information from text
+ * Extract exam dates - STRICT same-line matching only (no lookahead)
+ * This prevents false positives from nearby dates
  */
 function extractExamDates(text: string): ExtractedExam[] {
   const exams: ExtractedExam[] = [];
   const lines = text.split('\n');
   console.log('Total lines to parse:', lines.length);
 
-  // Keywords to identify exam-related content (more comprehensive)
+  // Keywords for exam types
   const examKeywords = [
-    'exam', 'midterm', 'test', 'quiz', 'quizzes', 'project',
-    'presentation', 'final', 'assessment', 'evaluation'
+    { pattern: /\b(midterm|mid-term|mid term)\b/i, type: 'midterm' as const },
+    { pattern: /\bfinal\s+(exam|test)\b/i, type: 'exam' as const },
+    { pattern: /\bquiz(zes)?\b/i, type: 'quiz' as const },
+    { pattern: /\btest\b/i, type: 'test' as const },
+    { pattern: /\bexam\b/i, type: 'exam' as const },
+    { pattern: /\bproject\b/i, type: 'project' as const },
+    { pattern: /\bpresentation\b/i, type: 'presentation' as const }
   ];
 
-  // Common date patterns (expanded)
+  // Exclusion patterns - skip these lines entirely
+  const exclusionPatterns = [
+    /review\s+session/i,
+    /office\s+hours/i,
+    /grade(s)?\s+(posted|released|available)/i,
+    /homework|assignment|paper/i,
+    /holiday|break|no\s+class|cancelled/i,
+    /syllabus\s+updated/i,
+    /due\s+date/i
+  ];
+
+  // Date patterns
   const datePatterns = [
-    // MM/DD/YYYY or MM-DD-YYYY or MM.DD.YYYY
-    /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4}|\d{2})/g,
-    // Month DD, YYYY (e.g., January 15, 2025)
-    /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(\d{4})/gi,
-    // Mon DD, YYYY (e.g., Jan 15, 2025)
-    /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+(\d{1,2}),?\s+(\d{4})/gi,
-    // DD Month YYYY (e.g., 15 January 2025)
-    /(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})/gi,
-    // Month DD (e.g., January 15) - will use current or next year
-    /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})/gi,
-    // Mon DD (e.g., Jan 15)
-    /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+(\d{1,2})/gi,
+    // MM/DD/YYYY or MM-DD-YYYY
+    /(0?[1-9]|1[0-2])[\/\-](0?[1-9]|[12][0-9]|3[01])[\/\-](\d{4})/g,
+    // Month DD, YYYY
+    /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(0?[1-9]|[12][0-9]|3[01]),?\s+(\d{4})/gi,
+    // Mon DD, YYYY
+    /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+(0?[1-9]|[12][0-9]|3[01]),?\s+(\d{4})/gi
   ];
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+  for (const line of lines) {
     const lowerLine = line.toLowerCase();
 
-    // Check if line contains exam-related keywords
-    const hasExamKeyword = examKeywords.some(keyword => lowerLine.includes(keyword));
+    // Skip lines with exclusion patterns
+    if (exclusionPatterns.some(pattern => pattern.test(line))) {
+      continue;
+    }
 
-    if (hasExamKeyword) {
-      // Skip weekly/recurring quizzes - they need special handling
-      const recurringPatterns = /weekly|every week|each week/i;
-      if (lowerLine.includes('quiz') && recurringPatterns.test(line)) {
-        console.log('Skipping recurring quiz description:', line.substring(0, 100));
-        continue;
+    // Check if line contains exam keyword
+    let examType: ExtractedExam['type'] | null = null;
+    for (const { pattern, type } of examKeywords) {
+      if (pattern.test(line)) {
+        examType = type;
+        break;
       }
+    }
 
-      // Try to find a date in this line or nearby lines (check more lines)
-      let dateFound = false;
-      let extractedDate = '';
-      let context = line;
+    if (!examType) continue;
 
-      // Check current line and next 3 lines for dates
-      for (let j = 0; j <= 3 && i + j < lines.length; j++) {
-        const checkLine = lines[i + j];
+    // Look for date ON THE SAME LINE ONLY
+    let dateFound = false;
+    let extractedDate = '';
 
-        for (const pattern of datePatterns) {
-          const matches = [...checkLine.matchAll(pattern)];
-          if (matches.length > 0) {
-            // Take the first match
-            dateFound = true;
-            extractedDate = matches[0][0];
-            if (j > 0) context += ' ' + checkLine;
-            break;
-          }
-        }
-        if (dateFound) break;
+    for (const pattern of datePatterns) {
+      const matches = [...line.matchAll(pattern)];
+      if (matches.length > 0) {
+        dateFound = true;
+        extractedDate = matches[0][0];
+        break;
       }
+    }
 
-      if (dateFound && extractedDate) {
-        // Determine exam type (check in order of specificity)
-        let type: ExtractedExam['type'] = 'exam';
-        if (lowerLine.includes('quiz')) type = 'quiz';
-        else if (lowerLine.includes('midterm')) type = 'midterm';
-        else if (lowerLine.includes('final')) type = 'exam'; // Final exam
-        else if (lowerLine.includes('project')) type = 'project';
-        else if (lowerLine.includes('presentation')) type = 'presentation';
-        else if (lowerLine.includes('test')) type = 'test';
+    if (dateFound && extractedDate) {
+      // Convert date to YYYY-MM-DD format
+      const standardDate = parseAndStandardizeDate(extractedDate);
 
-        // Try to extract a title from the line
+      if (standardDate) {
+        // Extract a clean title from the line
         let title = line.trim();
 
-        // If the line is too long or generic, create a better title
-        if (title.length > 100 || title.length < 3) {
-          title = capitalizeType(type);
-        } else {
-          // Clean up the title
-          title = title.replace(/\s+/g, ' ').trim();
-          if (title.length > 80) {
-            title = title.substring(0, 80) + '...';
-          }
+        // Clean up the title
+        if (title.length > 80) {
+          title = title.substring(0, 80) + '...';
         }
 
-        // Convert date to YYYY-MM-DD format
-        const standardDate = parseAndStandardizeDate(extractedDate);
-
-        if (standardDate) {
-          exams.push({
-            title: title || capitalizeType(type),
-            date: standardDate,
-            type,
-            notes: context.trim().substring(0, 300) // Limit notes length
-          });
-        }
+        exams.push({
+          title: title || capitalizeType(examType),
+          date: standardDate,
+          type: examType,
+          notes: line.trim().substring(0, 300)
+        });
       }
     }
   }
 
-  // Remove duplicates - only if BOTH date AND title match exactly
+  // Remove exact duplicates (same date AND same title)
   const unique = exams.filter((exam, index, self) =>
     index === self.findIndex((e) =>
       e.date === exam.date &&
@@ -237,7 +227,6 @@ function extractExamDates(text: string): ExtractedExam[] {
  */
 function parseAndStandardizeDate(dateStr: string): string | null {
   try {
-    // Month name to number mapping
     const monthMap: Record<string, number> = {
       'january': 0, 'jan': 0,
       'february': 1, 'feb': 1,
@@ -254,51 +243,23 @@ function parseAndStandardizeDate(dateStr: string): string | null {
     };
 
     let date: Date | null = null;
-    const currentYear = new Date().getFullYear();
 
-    // Try MM/DD/YYYY or MM-DD-YYYY or MM.DD.YYYY
-    const slashMatch = dateStr.match(/(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4}|\d{2})/);
+    // Try MM/DD/YYYY or MM-DD-YYYY
+    const slashMatch = dateStr.match(/(0?[1-9]|1[0-2])[\/\-](0?[1-9]|[12][0-9]|3[01])[\/\-](\d{4})/);
     if (slashMatch) {
       const month = parseInt(slashMatch[1]) - 1;
       const day = parseInt(slashMatch[2]);
-      let year = parseInt(slashMatch[3]);
-      if (year < 100) year += 2000; // Convert 2-digit year
+      const year = parseInt(slashMatch[3]);
       date = new Date(year, month, day);
     }
 
     // Try "Month DD, YYYY" format
-    const monthDayYearMatch = dateStr.match(/(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+(\d{1,2}),?\s+(\d{4})/i);
+    const monthDayYearMatch = dateStr.match(/(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+(0?[1-9]|[12][0-9]|3[01]),?\s+(\d{4})/i);
     if (monthDayYearMatch && !date) {
       const monthName = monthDayYearMatch[1].toLowerCase().replace('.', '');
       const month = monthMap[monthName];
       const day = parseInt(monthDayYearMatch[2]);
       const year = parseInt(monthDayYearMatch[3]);
-      date = new Date(year, month, day);
-    }
-
-    // Try "DD Month YYYY" format
-    const dayMonthYearMatch = dateStr.match(/(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})/i);
-    if (dayMonthYearMatch && !date) {
-      const day = parseInt(dayMonthYearMatch[1]);
-      const monthName = dayMonthYearMatch[2].toLowerCase();
-      const month = monthMap[monthName];
-      const year = parseInt(dayMonthYearMatch[3]);
-      date = new Date(year, month, day);
-    }
-
-    // Try "Month DD" format (without year) - assume current or next year
-    const monthDayMatch = dateStr.match(/(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+(\d{1,2})/i);
-    if (monthDayMatch && !date) {
-      const monthName = monthDayMatch[1].toLowerCase().replace('.', '');
-      const month = monthMap[monthName];
-      const day = parseInt(monthDayMatch[2]);
-
-      // Use current year, or next year if the date has already passed
-      let year = currentYear;
-      const testDate = new Date(year, month, day);
-      if (testDate < new Date()) {
-        year = currentYear + 1;
-      }
       date = new Date(year, month, day);
     }
 
