@@ -405,7 +405,7 @@ const Dashboard = () => {
                                     </div>
                                     {exam.location && (
                                       <p className="text-sm text-muted-foreground">
-                                        📍 {exam.location}
+                                        Location: {exam.location}
                                       </p>
                                     )}
                                     {exam.notes && (
