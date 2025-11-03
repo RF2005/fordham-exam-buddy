@@ -7,14 +7,14 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.j
 export interface ExtractedExam {
   title: string;
   date: string;
-  type: 'exam' | 'midterm' | 'test' | 'quiz' | 'project' | 'presentation';
+  type: 'exam' | 'midterm' | 'test' | 'quiz' | 'project' | 'presentation' | 'final';
   notes?: string;
 }
 
 /**
- * Parse uploaded file and extract exam dates
+ * Parse uploaded file and extract text (returns raw text, not parsed exams)
  */
-export async function parseSyllabusFile(file: File): Promise<ExtractedExam[]> {
+export async function parseSyllabusFile(file: File): Promise<string> {
   const fileType = file.type;
   let text = '';
 
@@ -32,11 +32,24 @@ export async function parseSyllabusFile(file: File): Promise<ExtractedExam[]> {
       throw new Error('Unsupported file type. Please upload PDF, DOCX, or TXT files.');
     }
 
-    return extractExamDates(text);
+    return text;
   } catch (error) {
     console.error('Error parsing syllabus:', error);
     throw error;
   }
+}
+
+/**
+ * Parse raw text and extract exam dates
+ */
+export function parseSyllabusText(text: string): ExtractedExam[] {
+  if (!text || text.trim().length === 0) {
+    throw new Error('Please enter some text to parse.');
+  }
+  console.log('Parsing text, length:', text.length);
+  const results = extractExamDates(text);
+  console.log('Found exams:', results);
+  return results;
 }
 
 /**
@@ -84,20 +97,28 @@ async function parseTXT(file: File): Promise<string> {
 function extractExamDates(text: string): ExtractedExam[] {
   const exams: ExtractedExam[] = [];
   const lines = text.split('\n');
+  console.log('Total lines to parse:', lines.length);
 
-  // Keywords to identify exam-related content
-  const examKeywords = ['exam', 'midterm', 'test', 'quiz', 'project', 'presentation', 'final'];
+  // Keywords to identify exam-related content (more comprehensive)
+  const examKeywords = [
+    'exam', 'midterm', 'test', 'quiz', 'quizzes', 'project',
+    'presentation', 'final', 'assessment', 'evaluation'
+  ];
 
-  // Common date patterns
+  // Common date patterns (expanded)
   const datePatterns = [
-    // MM/DD/YYYY or MM-DD-YYYY
-    /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4}|\d{2})/g,
+    // MM/DD/YYYY or MM-DD-YYYY or MM.DD.YYYY
+    /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4}|\d{2})/g,
     // Month DD, YYYY (e.g., January 15, 2025)
     /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(\d{4})/gi,
     // Mon DD, YYYY (e.g., Jan 15, 2025)
     /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+(\d{1,2}),?\s+(\d{4})/gi,
     // DD Month YYYY (e.g., 15 January 2025)
     /(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})/gi,
+    // Month DD (e.g., January 15) - will use current or next year
+    /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})/gi,
+    // Mon DD (e.g., Jan 15)
+    /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+(\d{1,2})/gi,
   ];
 
   for (let i = 0; i < lines.length; i++) {
@@ -108,41 +129,57 @@ function extractExamDates(text: string): ExtractedExam[] {
     const hasExamKeyword = examKeywords.some(keyword => lowerLine.includes(keyword));
 
     if (hasExamKeyword) {
-      // Try to find a date in this line or nearby lines
+      // Skip weekly/recurring quizzes - they need special handling
+      const recurringPatterns = /weekly|every week|each week/i;
+      if (lowerLine.includes('quiz') && recurringPatterns.test(line)) {
+        console.log('Skipping recurring quiz description:', line.substring(0, 100));
+        continue;
+      }
+
+      // Try to find a date in this line or nearby lines (check more lines)
       let dateFound = false;
       let extractedDate = '';
       let context = line;
 
-      // Check current line and next few lines for dates
-      for (let j = 0; j <= 2 && i + j < lines.length; j++) {
+      // Check current line and next 3 lines for dates
+      for (let j = 0; j <= 3 && i + j < lines.length; j++) {
         const checkLine = lines[i + j];
 
         for (const pattern of datePatterns) {
-          const matches = checkLine.matchAll(pattern);
-          for (const match of matches) {
+          const matches = [...checkLine.matchAll(pattern)];
+          if (matches.length > 0) {
+            // Take the first match
             dateFound = true;
-            extractedDate = match[0];
+            extractedDate = matches[0][0];
             if (j > 0) context += ' ' + checkLine;
             break;
           }
-          if (dateFound) break;
         }
         if (dateFound) break;
       }
 
       if (dateFound && extractedDate) {
-        // Determine exam type
+        // Determine exam type (check in order of specificity)
         let type: ExtractedExam['type'] = 'exam';
-        if (lowerLine.includes('midterm')) type = 'midterm';
-        else if (lowerLine.includes('quiz')) type = 'quiz';
+        if (lowerLine.includes('quiz')) type = 'quiz';
+        else if (lowerLine.includes('midterm')) type = 'midterm';
+        else if (lowerLine.includes('final')) type = 'exam'; // Final exam
         else if (lowerLine.includes('project')) type = 'project';
         else if (lowerLine.includes('presentation')) type = 'presentation';
         else if (lowerLine.includes('test')) type = 'test';
 
-        // Try to extract a title
+        // Try to extract a title from the line
         let title = line.trim();
-        if (title.length > 100) {
-          title = title.substring(0, 100) + '...';
+
+        // If the line is too long or generic, create a better title
+        if (title.length > 100 || title.length < 3) {
+          title = capitalizeType(type);
+        } else {
+          // Clean up the title
+          title = title.replace(/\s+/g, ' ').trim();
+          if (title.length > 80) {
+            title = title.substring(0, 80) + '...';
+          }
         }
 
         // Convert date to YYYY-MM-DD format
@@ -150,19 +187,22 @@ function extractExamDates(text: string): ExtractedExam[] {
 
         if (standardDate) {
           exams.push({
-            title: capitalizeType(type),
+            title: title || capitalizeType(type),
             date: standardDate,
             type,
-            notes: context.trim()
+            notes: context.trim().substring(0, 300) // Limit notes length
           });
         }
       }
     }
   }
 
-  // Remove duplicates (same date and type)
+  // Remove duplicates - only if BOTH date AND title match exactly
   const unique = exams.filter((exam, index, self) =>
-    index === self.findIndex((e) => e.date === exam.date && e.type === exam.type)
+    index === self.findIndex((e) =>
+      e.date === exam.date &&
+      e.title.toLowerCase() === exam.title.toLowerCase()
+    )
   );
 
   return unique;
@@ -190,9 +230,10 @@ function parseAndStandardizeDate(dateStr: string): string | null {
     };
 
     let date: Date | null = null;
+    const currentYear = new Date().getFullYear();
 
-    // Try MM/DD/YYYY or MM-DD-YYYY
-    const slashMatch = dateStr.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4}|\d{2})/);
+    // Try MM/DD/YYYY or MM-DD-YYYY or MM.DD.YYYY
+    const slashMatch = dateStr.match(/(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4}|\d{2})/);
     if (slashMatch) {
       const month = parseInt(slashMatch[1]) - 1;
       const day = parseInt(slashMatch[2]);
@@ -203,7 +244,7 @@ function parseAndStandardizeDate(dateStr: string): string | null {
 
     // Try "Month DD, YYYY" format
     const monthDayYearMatch = dateStr.match(/(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+(\d{1,2}),?\s+(\d{4})/i);
-    if (monthDayYearMatch) {
+    if (monthDayYearMatch && !date) {
       const monthName = monthDayYearMatch[1].toLowerCase().replace('.', '');
       const month = monthMap[monthName];
       const day = parseInt(monthDayYearMatch[2]);
@@ -213,11 +254,27 @@ function parseAndStandardizeDate(dateStr: string): string | null {
 
     // Try "DD Month YYYY" format
     const dayMonthYearMatch = dateStr.match(/(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})/i);
-    if (dayMonthYearMatch) {
+    if (dayMonthYearMatch && !date) {
       const day = parseInt(dayMonthYearMatch[1]);
       const monthName = dayMonthYearMatch[2].toLowerCase();
       const month = monthMap[monthName];
       const year = parseInt(dayMonthYearMatch[3]);
+      date = new Date(year, month, day);
+    }
+
+    // Try "Month DD" format (without year) - assume current or next year
+    const monthDayMatch = dateStr.match(/(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+(\d{1,2})/i);
+    if (monthDayMatch && !date) {
+      const monthName = monthDayMatch[1].toLowerCase().replace('.', '');
+      const month = monthMap[monthName];
+      const day = parseInt(monthDayMatch[2]);
+
+      // Use current year, or next year if the date has already passed
+      let year = currentYear;
+      const testDate = new Date(year, month, day);
+      if (testDate < new Date()) {
+        year = currentYear + 1;
+      }
       date = new Date(year, month, day);
     }
 

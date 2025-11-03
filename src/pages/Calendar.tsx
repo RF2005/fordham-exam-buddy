@@ -35,18 +35,12 @@ const Calendar = () => {
   const [exams, setExams] = useState<Exam[]>([]);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      // TEMPORARY: Bypass auth check for local development
-      // if (!session) {
-      //   navigate("/auth");
-      //   return;
-      // }
+    const init = async () => {
       await fetchCourses();
       fetchExams();
     };
 
-    checkAuth();
+    init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {

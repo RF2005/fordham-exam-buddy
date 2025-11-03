@@ -12,6 +12,7 @@ import { z } from "zod";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navigation from "@/components/Navigation";
 import { parseSyllabusFile, ExtractedExam } from "@/utils/syllabusParser";
+import { parseWithBestAvailableAI, getParserName } from "@/utils/hybridAiParser";
 
 const examSchema = z.object({
   course: z.string().min(1, "Course is required").max(100),
@@ -55,23 +56,15 @@ const AddExam = () => {
   const [uploadLoading, setUploadLoading] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState('');
   const [isDragging, setIsDragging] = useState(false);
+  const [pastedText, setPastedText] = useState('');
+  const [sectionNumber, setSectionNumber] = useState('');
+  const [openaiApiKey, setOpenaiApiKey] = useState('');
 
   useEffect(() => {
-    const checkAuth = async () => {
-      await supabase.auth.getSession();
-      // TEMPORARY: Bypass auth check for local development
-      // if (!session) {
-      //   navigate("/auth");
-      //   return;
-      // }
-
-      if (editId) {
-        fetchExam(editId);
-      }
-    };
-
-    checkAuth();
-  }, [navigate, editId]);
+    if (editId) {
+      fetchExam(editId);
+    }
+  }, [editId]);
 
   const fetchExam = async (id: string) => {
     try {
@@ -229,25 +222,57 @@ const AddExam = () => {
 
 
   const processFile = async (file: File) => {
+    console.log('File uploaded:', file.name, 'Type:', file.type, 'Size:', file.size);
     setUploadedFile(file);
+    toast({
+      title: "File uploaded",
+      description: `${file.name} - Click "Parse with AI" to extract exam dates`
+    });
+  };
+
+  const handleAIParseFile = async () => {
+    if (!uploadedFile) {
+      toast({
+        variant: "destructive",
+        title: "No file uploaded",
+        description: "Please upload a file first"
+      });
+      return;
+    }
+
     setUploadLoading(true);
 
     try {
-      const exams = await parseSyllabusFile(file);
+      // First extract text from the file
+      const text = await parseSyllabusFile(uploadedFile);
+      console.log('Extracted text from file, length:', text.length);
 
-      if (exams.length === 0) {
+      // Use smart hybrid parser
+      const result = await parseWithBestAvailableAI(text, sectionNumber, openaiApiKey);
+      console.log('Parsed exams:', result);
+
+      if (result.exams.length === 0) {
         toast({
           title: "No exams found",
-          description: "Could not find any exam dates in the uploaded file. Try manual entry instead."
+          description: "AI could not find any exam dates. Try manual entry instead."
         });
       } else {
-        setExtractedExams(exams);
+        // Convert to ExtractedExam format
+        const convertedExams: ExtractedExam[] = result.exams.map(exam => ({
+          title: exam.title,
+          date: exam.date,
+          type: exam.type,
+          notes: exam.notes
+        }));
+
+        setExtractedExams(convertedExams);
         toast({
-          title: "Syllabus parsed successfully",
-          description: `Found ${exams.length} exam date(s) in your syllabus`
+          title: `Parsed with ${getParserName(result.parserUsed)}!`,
+          description: `Found ${result.exams.length} exam date(s) in your syllabus`
         });
       }
     } catch (error: any) {
+      console.error('Error processing file:', error);
       toast({
         variant: "destructive",
         title: "Error parsing file",
@@ -260,9 +285,64 @@ const AddExam = () => {
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('handleFileUpload called');
     const file = event.target.files?.[0];
-    if (!file) return;
+    console.log('Selected file:', file);
+    if (!file) {
+      console.log('No file selected');
+      return;
+    }
+    console.log('Calling processFile...');
     await processFile(file);
+  };
+
+
+  const handleAIParse = async () => {
+    if (!pastedText.trim()) {
+      toast({
+        variant: "destructive",
+        title: "No text entered",
+        description: "Please paste your syllabus text before parsing"
+      });
+      return;
+    }
+
+    setUploadLoading(true);
+    try {
+      // Use smart hybrid parser
+      const result = await parseWithBestAvailableAI(pastedText, sectionNumber, openaiApiKey);
+
+      if (result.exams.length === 0) {
+        toast({
+          title: "No exams found",
+          description: "AI could not find any exam dates. Try manual entry instead."
+        });
+      } else {
+        // Convert to ExtractedExam format
+        const convertedExams: ExtractedExam[] = result.exams.map(exam => ({
+          title: exam.title,
+          date: exam.date,
+          type: exam.type,
+          notes: exam.notes
+        }));
+
+        setExtractedExams(convertedExams);
+        setUploadedFile(null);
+        toast({
+          title: `Parsed with ${getParserName(result.parserUsed)}!`,
+          description: `Found ${result.exams.length} exam date(s) using AI`
+        });
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "AI parsing failed",
+        description: error.message || "Failed to parse with AI"
+      });
+      setExtractedExams([]);
+    } finally {
+      setUploadLoading(false);
+    }
   };
 
   const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
@@ -282,14 +362,23 @@ const AddExam = () => {
     const file = event.dataTransfer.files?.[0];
     if (!file) return;
 
-    const validTypes = ['.pdf', '.docx', '.doc', '.txt'];
-    const isValidType = validTypes.some(type => file.name.toLowerCase().endsWith(type));
+    // Check both MIME type and file extension for better validation
+    const validMimeTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword',
+      'text/plain'
+    ];
+    const validExtensions = ['.pdf', '.docx', '.doc', '.txt'];
 
-    if (!isValidType) {
+    const hasMimeType = validMimeTypes.includes(file.type);
+    const hasExtension = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+
+    if (!hasMimeType && !hasExtension) {
       toast({
         variant: "destructive",
         title: "Invalid file type",
-        description: "Please upload a PDF, DOCX, or TXT file"
+        description: `Please upload a PDF, DOCX, or TXT file. Got: ${file.name}`
       });
       return;
     }
@@ -591,21 +680,49 @@ const AddExam = () => {
                 <div className="space-y-6">
                   <div className="text-center space-y-2">
                     <p className="text-sm text-muted-foreground">
-                      Upload your course syllabus (PDF, DOCX, or TXT) and we'll automatically extract exam dates
+                      Upload your course syllabus (PDF, DOCX, or TXT) and we'll automatically extract exam dates using AI
                     </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="course-name">Course Name</Label>
+                    <Label htmlFor="openai-key">OpenAI API Key (Optional)</Label>
                     <Input
-                      id="course-name"
-                      placeholder="e.g., CISC 1600"
-                      value={selectedCourse}
-                      onChange={(e) => setSelectedCourse(e.target.value)}
+                      id="openai-key"
+                      type="password"
+                      placeholder="sk-... (optional - for better accuracy)"
+                      value={openaiApiKey}
+                      onChange={(e) => setOpenaiApiKey(e.target.value)}
                     />
                     <p className="text-xs text-muted-foreground">
-                      Enter the course name for all extracted exams
+                      For best results, add your OpenAI API key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">platform.openai.com</a>. New users get $5 free credit.
                     </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="course-name">Course Name</Label>
+                      <Input
+                        id="course-name"
+                        placeholder="e.g., CISC 1600"
+                        value={selectedCourse}
+                        onChange={(e) => setSelectedCourse(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Course code or name
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="section-number">Section Number (Optional)</Label>
+                      <Input
+                        id="section-number"
+                        placeholder="e.g., 01, 02, A, B"
+                        value={sectionNumber}
+                        onChange={(e) => setSectionNumber(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        For recurring quizzes/tests
+                      </p>
+                    </div>
                   </div>
 
                   <div
@@ -641,6 +758,61 @@ const AddExam = () => {
                         Uploaded: {uploadedFile.name}
                       </p>
                     )}
+                  </div>
+
+                  {uploadedFile && (
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAIParseFile();
+                      }}
+                      disabled={uploadLoading}
+                      className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                      size="lg"
+                    >
+                      {uploadLoading ? 'AI Parsing...' : '✨ Parse with AI'}
+                    </Button>
+                  )}
+
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">
+                        Or paste text directly
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="syllabus-text">Paste Syllabus Text</Label>
+                      <Textarea
+                        id="syllabus-text"
+                        placeholder="Paste your syllabus text here...
+
+Example:
+Midterm Exam - October 15, 2024
+Final Exam - December 10, 2024"
+                        value={pastedText}
+                        onChange={(e) => setPastedText(e.target.value)}
+                        rows={8}
+                        className="font-mono text-sm"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Copy and paste text from your syllabus PDF or document
+                      </p>
+                    </div>
+
+                    <Button
+                      onClick={handleAIParse}
+                      disabled={uploadLoading || !pastedText.trim()}
+                      className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                      size="lg"
+                    >
+                      {uploadLoading ? 'AI Parsing...' : '✨ Parse with AI'}
+                    </Button>
                   </div>
 
                   {uploadLoading && (
