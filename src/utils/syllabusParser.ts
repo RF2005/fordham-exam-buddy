@@ -1,5 +1,6 @@
 import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
+import { extractTextWithOCR, isImageFile, isLikelyScannedPDF } from './ocrService';
 
 // Set up PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
@@ -19,7 +20,11 @@ export async function parseSyllabusFile(file: File): Promise<string> {
   let text = '';
 
   try {
-    if (fileType === 'application/pdf') {
+    // Check if it's an image file - use OCR directly
+    if (isImageFile(file)) {
+      console.log('Image file detected, using OCR');
+      text = await parseImage(file);
+    } else if (fileType === 'application/pdf') {
       text = await parsePDF(file);
     } else if (
       fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
@@ -29,7 +34,7 @@ export async function parseSyllabusFile(file: File): Promise<string> {
     } else if (fileType === 'text/plain') {
       text = await parseTXT(file);
     } else {
-      throw new Error('Unsupported file type. Please upload PDF, DOCX, or TXT files.');
+      throw new Error('Unsupported file type. Please upload PDF, DOCX, TXT, PNG, or JPG files.');
     }
 
     return text;
@@ -53,26 +58,45 @@ export function parseSyllabusText(text: string): ExtractedExam[] {
 }
 
 /**
- * Parse PDF file using PDF.js
+ * Parse image file using OCR
+ */
+async function parseImage(file: File): Promise<string> {
+  return await extractTextWithOCR(file);
+}
+
+/**
+ * Parse PDF file using PDF.js, with OCR fallback for scanned PDFs
  */
 async function parsePDF(file: File): Promise<string> {
-  const arrayBuffer = await file.arrayBuffer();
-  const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-  const pdf = await loadingTask.promise;
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+    const pdf = await loadingTask.promise;
 
-  let fullText = '';
+    let fullText = '';
 
-  // Extract text from each page
-  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-    const page = await pdf.getPage(pageNum);
-    const textContent = await page.getTextContent();
-    const pageText = textContent.items
-      .map((item: any) => item.str)
-      .join(' ');
-    fullText += pageText + '\n';
+    // Extract text from each page
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items
+        .map((item: any) => item.str)
+        .join(' ');
+      fullText += pageText + '\n';
+    }
+
+    // Check if the extracted text is too short (likely scanned PDF)
+    if (isLikelyScannedPDF(fullText)) {
+      console.log('PDF appears to be scanned (minimal text extracted), using OCR fallback');
+      return await extractTextWithOCR(file);
+    }
+
+    return fullText;
+  } catch (error) {
+    console.error('PDF text extraction failed, trying OCR:', error);
+    // If PDF parsing fails completely, try OCR as fallback
+    return await extractTextWithOCR(file);
   }
-
-  return fullText;
 }
 
 /**

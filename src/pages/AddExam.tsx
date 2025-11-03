@@ -367,9 +367,12 @@ const AddExam = () => {
       'application/pdf',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'application/msword',
-      'text/plain'
+      'text/plain',
+      'image/png',
+      'image/jpeg',
+      'image/jpg'
     ];
-    const validExtensions = ['.pdf', '.docx', '.doc', '.txt'];
+    const validExtensions = ['.pdf', '.docx', '.doc', '.txt', '.png', '.jpg', '.jpeg'];
 
     const hasMimeType = validMimeTypes.includes(file.type);
     const hasExtension = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
@@ -378,7 +381,7 @@ const AddExam = () => {
       toast({
         variant: "destructive",
         title: "Invalid file type",
-        description: `Please upload a PDF, DOCX, or TXT file. Got: ${file.name}`
+        description: `Please upload a PDF, DOCX, TXT, PNG, or JPG file. Got: ${file.name}`
       });
       return;
     }
@@ -680,7 +683,10 @@ const AddExam = () => {
                 <div className="space-y-6">
                   <div className="text-center space-y-2">
                     <p className="text-sm text-muted-foreground">
-                      Upload your course syllabus (PDF, DOCX, or TXT) and we'll automatically extract exam dates using AI
+                      Upload your course syllabus (PDF, DOCX, TXT, or image) and we'll automatically extract exam dates using AI + OCR
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Scanned PDFs and photos of syllabi are supported
                     </p>
                   </div>
 
@@ -742,13 +748,13 @@ const AddExam = () => {
                         <span className="text-base font-semibold">Click to Upload or Drag and Drop</span>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        PDF, DOCX, or TXT files
+                        PDF, DOCX, TXT, PNG, or JPG files
                       </p>
                     </div>
                     <input
                       id="file-upload"
                       type="file"
-                      accept=".pdf,.docx,.doc,.txt"
+                      accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg"
                       onChange={handleFileUpload}
                       className="hidden"
                       onClick={(e) => e.stopPropagation()}

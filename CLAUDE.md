@@ -38,8 +38,8 @@ npm run preview
   - `Auth.tsx`: Authentication page
   - `Dashboard.tsx`: Main dashboard with exam list
   - `Calendar.tsx`: Calendar view of exams
-  - `AddExam.tsx`: Two-method exam entry (manual and database lookup)
-  - `TestReminders.tsx`: Reminder preferences management
+  - `AddExam.tsx`: Three-method exam entry (manual, database lookup, and syllabus upload with OCR)
+  - `NotFound.tsx`: 404 error page
 
 - **Routing** ([src/App.tsx](src/App.tsx)): React Router setup with routes for all pages. Auth page is the root route.
 
@@ -60,8 +60,7 @@ npm run preview
 - `system_config`: Application configuration
 
 **Supabase Edge Functions** ([supabase/functions/](supabase/functions/)):
-- `send-exam-reminders`: Cron-triggered function that sends email reminders via Resend API based on user preferences
-- `test-send-reminders`: Manual testing endpoint for reminder functionality
+- `ocr-extract`: OCR extraction service for scanned PDFs and images using PaddleOCR API
 - `populate-courses`: Import course data into database
 - `import-all-courses`: Batch course import
 
@@ -69,16 +68,23 @@ npm run preview
 
 ### Key Integration Points
 
-1. **Exam Reminder System**:
-   - Users set reminder_days array in notification_preferences table
-   - `send-exam-reminders` edge function runs on cron (requires CRON_SECRET auth header)
-   - Function queries upcoming exams and sends emails via Resend API
-   - Email template includes exam details with Fordham branding
+1. **Syllabus Parsing with OCR**:
+   - Users can upload PDF, DOCX, TXT, or image files (PNG, JPG)
+   - Digital PDFs: Extracted using pdfjs-dist (fast, client-side)
+   - Scanned PDFs/Images: Fallback to OCR via `ocr-extract` edge function
+   - Extracted text is parsed by AI (Chrome Built-in AI or OpenAI GPT-4o-mini)
+   - Flow: Upload → Text Extraction (OCR if needed) → AI Parsing → Display Results
+   - Files: [syllabusParser.ts](src/utils/syllabusParser.ts), [ocrService.ts](src/utils/ocrService.ts), [hybridAiParser.ts](src/utils/hybridAiParser.ts)
 
 2. **Final Exam Lookup**:
    - `final_exam_schedules` table pre-populated with Fordham's official schedule
    - Users search by subject + course number in [AddExam.tsx](src/pages/AddExam.tsx)
    - Results auto-populate exam form for quick entry
+
+3. **Calendar Export**:
+   - Users can export exams to .ics calendar files
+   - Download button in Dashboard and Calendar pages
+   - Replaces previous email reminder system
 
 ## Environment Variables
 
@@ -87,16 +93,20 @@ Required in `.env`:
 - `VITE_SUPABASE_ANON_KEY`: Supabase anonymous key
 
 Required in Supabase Edge Functions (set in Supabase dashboard):
-- `RESEND_API_KEY`: Resend API key for email delivery
-- `CRON_SECRET`: Secret for authenticating cron jobs
+- `PADDLEOCR_API_KEY`: PaddleOCR API key for OCR text extraction
+- `PADDLEOCR_API_URL`: PaddleOCR API endpoint URL
 - `SUPABASE_URL`: Auto-provided by Supabase
 - `SUPABASE_SERVICE_ROLE_KEY`: Auto-provided by Supabase
+
+Note: To set up OCR functionality:
+1. Sign up at https://paddleocr.com for API access
+2. Add API credentials to Supabase Edge Functions secrets
+3. Deploy the `ocr-extract` edge function: `supabase functions deploy ocr-extract`
 
 ## Supabase Configuration
 
 **Edge Function Settings** ([supabase/config.toml](supabase/config.toml)):
-- `send-exam-reminders`: JWT verification disabled (uses CRON_SECRET instead)
-- `test-send-reminders`: JWT verification enabled
+- `ocr-extract`: JWT verification enabled (requires user authentication)
 
 ## Important Patterns
 
