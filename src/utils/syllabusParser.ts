@@ -127,7 +127,8 @@ function extractExamDates(text: string): ExtractedExam[] {
   // Keywords for exam types
   const examKeywords = [
     { pattern: /\b(midterm|mid-term|mid term)\b/i, type: 'midterm' as const },
-    { pattern: /\bfinal\s+(exam|test)\b/i, type: 'exam' as const },
+    { pattern: /\bfinal\s+(exam|test|essay)\b/i, type: 'exam' as const },
+    { pattern: /\bessay\b/i, type: 'project' as const },
     { pattern: /\bquiz(zes)?\b/i, type: 'quiz' as const },
     { pattern: /\btest\b/i, type: 'test' as const },
     { pattern: /\bexam\b/i, type: 'exam' as const },
@@ -140,10 +141,8 @@ function extractExamDates(text: string): ExtractedExam[] {
     /review\s+session/i,
     /office\s+hours/i,
     /grade(s)?\s+(posted|released|available)/i,
-    /homework|assignment|paper/i,
     /holiday|break|no\s+class|cancelled/i,
-    /syllabus\s+updated/i,
-    /due\s+date/i
+    /syllabus\s+updated/i
   ];
 
   // Date patterns
