@@ -159,7 +159,8 @@ function extractExamDates(text: string): ExtractedExam[] {
     /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(0?[1-9]|[12][0-9]|3[01])(st|nd|rd|th)?/gi
   ];
 
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const lowerLine = line.toLowerCase();
 
     // Skip lines with exclusion patterns
