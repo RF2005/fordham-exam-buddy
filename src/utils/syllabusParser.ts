@@ -150,9 +150,13 @@ function extractExamDates(text: string): ExtractedExam[] {
     // MM/DD/YYYY or MM-DD-YYYY
     /(0?[1-9]|1[0-2])[\/\-](0?[1-9]|[12][0-9]|3[01])[\/\-](\d{4})/g,
     // Month DD, YYYY
-    /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(0?[1-9]|[12][0-9]|3[01]),?\s+(\d{4})/gi,
+    /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(0?[1-9]|[12][0-9]|3[01])(st|nd|rd|th)?,?\s+(\d{4})/gi,
     // Mon DD, YYYY
-    /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+(0?[1-9]|[12][0-9]|3[01]),?\s+(\d{4})/gi
+    /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+(0?[1-9]|[12][0-9]|3[01])(st|nd|rd|th)?,?\s+(\d{4})/gi,
+    // DD(st/nd/rd/th) of Month (no year) - e.g., "25th of September"
+    /(0?[1-9]|[12][0-9]|3[01])(st|nd|rd|th)\s+of\s+(January|February|March|April|May|June|July|August|September|October|November|December)/gi,
+    // Month DD (no year) - e.g., "September 25"
+    /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(0?[1-9]|[12][0-9]|3[01])(st|nd|rd|th)?/gi
   ];
 
   for (const line of lines) {
@@ -174,17 +178,24 @@ function extractExamDates(text: string): ExtractedExam[] {
 
     if (!examType) continue;
 
-    // Look for date ON THE SAME LINE ONLY
+    // Look for date on same line or next 2 lines (for multi-line entries)
     let dateFound = false;
     let extractedDate = '';
+    let context = line;
 
-    for (const pattern of datePatterns) {
-      const matches = [...line.matchAll(pattern)];
-      if (matches.length > 0) {
-        dateFound = true;
-        extractedDate = matches[0][0];
-        break;
+    for (let j = 0; j <= 2 && i + j < lines.length; j++) {
+      const checkLine = lines[i + j];
+
+      for (const pattern of datePatterns) {
+        const matches = [...checkLine.matchAll(pattern)];
+        if (matches.length > 0) {
+          dateFound = true;
+          extractedDate = matches[0][0];
+          if (j > 0) context += ' ' + checkLine;
+          break;
+        }
       }
+      if (dateFound) break;
     }
 
     if (dateFound && extractedDate) {
@@ -242,6 +253,7 @@ function parseAndStandardizeDate(dateStr: string): string | null {
     };
 
     let date: Date | null = null;
+    const currentYear = new Date().getFullYear();
 
     // Try MM/DD/YYYY or MM-DD-YYYY
     const slashMatch = dateStr.match(/(0?[1-9]|1[0-2])[\/\-](0?[1-9]|[12][0-9]|3[01])[\/\-](\d{4})/);
@@ -252,13 +264,45 @@ function parseAndStandardizeDate(dateStr: string): string | null {
       date = new Date(year, month, day);
     }
 
-    // Try "Month DD, YYYY" format
-    const monthDayYearMatch = dateStr.match(/(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+(0?[1-9]|[12][0-9]|3[01]),?\s+(\d{4})/i);
+    // Try "Month DD, YYYY" format (with optional st/nd/rd/th)
+    const monthDayYearMatch = dateStr.match(/(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+(0?[1-9]|[12][0-9]|3[01])(st|nd|rd|th)?,?\s+(\d{4})/i);
     if (monthDayYearMatch && !date) {
       const monthName = monthDayYearMatch[1].toLowerCase().replace('.', '');
       const month = monthMap[monthName];
       const day = parseInt(monthDayYearMatch[2]);
-      const year = parseInt(monthDayYearMatch[3]);
+      const year = parseInt(monthDayYearMatch[4]);
+      date = new Date(year, month, day);
+    }
+
+    // Try "DDth of Month" format (no year) - e.g., "25th of September"
+    const dayOfMonthMatch = dateStr.match(/(0?[1-9]|[12][0-9]|3[01])(st|nd|rd|th)\s+of\s+(January|February|March|April|May|June|July|August|September|October|November|December)/i);
+    if (dayOfMonthMatch && !date) {
+      const day = parseInt(dayOfMonthMatch[1]);
+      const monthName = dayOfMonthMatch[3].toLowerCase();
+      const month = monthMap[monthName];
+
+      // Use current year or next year if date has passed
+      let year = currentYear;
+      const testDate = new Date(year, month, day);
+      if (testDate < new Date()) {
+        year = currentYear + 1;
+      }
+      date = new Date(year, month, day);
+    }
+
+    // Try "Month DD" format (no year) - e.g., "September 25"
+    const monthDayMatch = dateStr.match(/(January|February|March|April|May|June|July|August|September|October|November|December)\s+(0?[1-9]|[12][0-9]|3[01])(st|nd|rd|th)?(?!\s*,?\s*\d{4})/i);
+    if (monthDayMatch && !date) {
+      const monthName = monthDayMatch[1].toLowerCase();
+      const month = monthMap[monthName];
+      const day = parseInt(monthDayMatch[2]);
+
+      // Use current year or next year if date has passed
+      let year = currentYear;
+      const testDate = new Date(year, month, day);
+      if (testDate < new Date()) {
+        year = currentYear + 1;
+      }
       date = new Date(year, month, day);
     }
 
