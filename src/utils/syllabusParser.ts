@@ -180,12 +180,22 @@ function extractExamDates(text: string): ExtractedExam[] {
     if (!examType) continue;
 
     // Look for date on same line or next 2 lines (for multi-line entries)
+    // But only if the context suggests it's a due date (contains "due", "on", "by", etc.)
     let dateFound = false;
     let extractedDate = '';
     let context = line;
 
     for (let j = 0; j <= 2 && i + j < lines.length; j++) {
       const checkLine = lines[i + j];
+
+      // Check if this line or previous line has temporal indicators
+      const combinedContext = (j > 0 ? line + ' ' + checkLine : checkLine).toLowerCase();
+      const hasTemporalIndicator = /\b(due|on|by|scheduled|deadline|submit)\b/i.test(combinedContext);
+
+      // Skip if no temporal indicator (prevents random dates from being matched)
+      if (!hasTemporalIndicator && j > 0) {
+        continue;
+      }
 
       for (const pattern of datePatterns) {
         const matches = [...checkLine.matchAll(pattern)];
