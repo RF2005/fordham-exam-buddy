@@ -51,9 +51,7 @@ export function parseSyllabusText(text: string): ExtractedExam[] {
   if (!text || text.trim().length === 0) {
     throw new Error('Please enter some text to parse.');
   }
-  console.log('Parsing text, length:', text.length);
   const results = extractExamDates(text);
-  console.log('Found exams:', results);
   return results;
 }
 
@@ -75,14 +73,33 @@ async function parsePDF(file: File): Promise<string> {
 
     let fullText = '';
 
-    // Extract text from each page
+    // Extract text from each page, preserving line breaks
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
       const page = await pdf.getPage(pageNum);
       const textContent = await page.getTextContent();
-      const pageText = textContent.items
-        .map((item: any) => item.str)
-        .join(' ');
-      fullText += pageText + '\n';
+
+      // Group text items by Y position to preserve lines
+      const lines: Map<number, string[]> = new Map();
+
+      textContent.items.forEach((item: any) => {
+        if (!item.str.trim()) return; // Skip empty items
+
+        // Round Y position to group items on the same line
+        const y = Math.round(item.transform[5]);
+
+        if (!lines.has(y)) {
+          lines.set(y, []);
+        }
+        lines.get(y)!.push(item.str);
+      });
+
+      // Sort lines by Y position (top to bottom) and join
+      const sortedLines = Array.from(lines.entries())
+        .sort((a, b) => b[0] - a[0]) // PDF Y coordinates go bottom-to-top, so reverse
+        .map(([_, items]) => items.join(' ').trim())
+        .filter(line => line.length > 0);
+
+      fullText += sortedLines.join('\n') + '\n';
     }
 
     // Check if the extracted text is too short (likely scanned PDF)
@@ -122,17 +139,17 @@ async function parseTXT(file: File): Promise<string> {
 function extractExamDates(text: string): ExtractedExam[] {
   const exams: ExtractedExam[] = [];
   const lines = text.split('\n');
-  console.log('Total lines to parse:', lines.length);
 
-  // Keywords for exam types
+  // Keywords for exam types (ordered by specificity - most specific first)
   const examKeywords = [
     { pattern: /\b(midterm|mid-term|mid term)\b/i, type: 'midterm' as const },
     { pattern: /\bfinal\s+(exam|test|essay)\b/i, type: 'exam' as const },
-    { pattern: /\bessay\b/i, type: 'project' as const },
+    { pattern: /\bessay\s+\d+/i, type: 'project' as const },  // "Essay 1", "Essay 2", etc.
     { pattern: /\bquiz(zes)?\b/i, type: 'quiz' as const },
     { pattern: /\btest\b/i, type: 'test' as const },
     { pattern: /\bexam\b/i, type: 'exam' as const },
-    { pattern: /\bproject\b/i, type: 'project' as const },
+    { pattern: /\bfinal\s+project\b/i, type: 'project' as const },  // "Final Project"
+    { pattern: /\bresearch\s+project\b/i, type: 'project' as const },  // "Research Project"
     { pattern: /\bpresentation\b/i, type: 'presentation' as const }
   ];
 
@@ -142,17 +159,22 @@ function extractExamDates(text: string): ExtractedExam[] {
     /office\s+hours/i,
     /grade(s)?\s+(posted|released|available)/i,
     /holiday|break|no\s+class|cancelled/i,
-    /syllabus\s+updated/i
+    /syllabus\s+updated/i,
+    /class\s+schedule/i,
+    /weekly\s+reading/i,
+    /subject\s+to\s+change/i
   ];
 
   // Date patterns
   const datePatterns = [
-    // MM/DD/YYYY or MM-DD-YYYY
-    /(0?[1-9]|1[0-2])[\/\-](0?[1-9]|[12][0-9]|3[01])[\/\-](\d{4})/g,
-    // Month DD, YYYY
-    /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(0?[1-9]|[12][0-9]|3[01])(st|nd|rd|th)?,?\s+(\d{4})/gi,
-    // Mon DD, YYYY
-    /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+(0?[1-9]|[12][0-9]|3[01])(st|nd|rd|th)?,?\s+(\d{4})/gi,
+    // MM/DD/YYYY or MM-DD-YYYY or MM/DD/YY
+    /(0?[1-9]|1[0-2])[\/\-](0?[1-9]|[12][0-9]|3[01])[\/\-](\d{2,4})/g,
+    // Month DD, YYYY or Mon DD, YY
+    /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(0?[1-9]|[12][0-9]|3[01])(st|nd|rd|th)?,?\s+(\d{2,4})/gi,
+    // Mon DD, YYYY or Mon DD, YY
+    /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+(0?[1-9]|[12][0-9]|3[01])(st|nd|rd|th)?,?\s+(\d{2,4})/gi,
+    // DD Mon YY/YYYY - e.g., "24 Sep 25"
+    /(0?[1-9]|[12][0-9]|3[01])\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+(\d{2,4})/gi,
     // DD(st/nd/rd/th) of Month (no year) - e.g., "25th of September"
     /(0?[1-9]|[12][0-9]|3[01])(st|nd|rd|th)\s+of\s+(January|February|March|April|May|June|July|August|September|October|November|December)/gi,
     // Month DD (no year) - e.g., "September 25"
@@ -190,9 +212,10 @@ function extractExamDates(text: string): ExtractedExam[] {
 
       // Check if this line or previous line has temporal indicators
       const combinedContext = (j > 0 ? line + ' ' + checkLine : checkLine).toLowerCase();
-      const hasTemporalIndicator = /\b(due|on|by|scheduled|deadline|submit)\b/i.test(combinedContext);
+      const hasTemporalIndicator = /\b(due|on|by|scheduled|deadline|submit|is)\b/i.test(combinedContext);
 
-      // Skip if no temporal indicator (prevents random dates from being matched)
+      // For same-line matches (j=0), be more lenient - just check if date exists
+      // For lookahead lines (j>0), require temporal indicator
       if (!hasTemporalIndicator && j > 0) {
         continue;
       }
@@ -266,22 +289,42 @@ function parseAndStandardizeDate(dateStr: string): string | null {
     let date: Date | null = null;
     const currentYear = new Date().getFullYear();
 
-    // Try MM/DD/YYYY or MM-DD-YYYY
-    const slashMatch = dateStr.match(/(0?[1-9]|1[0-2])[\/\-](0?[1-9]|[12][0-9]|3[01])[\/\-](\d{4})/);
+    // Helper to convert 2-digit year to 4-digit
+    const expandYear = (yearStr: string): number => {
+      const year = parseInt(yearStr);
+      if (yearStr.length === 2) {
+        // Assume 20xx for years 00-99
+        return year + 2000;
+      }
+      return year;
+    };
+
+    // Try MM/DD/YYYY or MM-DD-YYYY or MM/DD/YY
+    const slashMatch = dateStr.match(/(0?[1-9]|1[0-2])[\/\-](0?[1-9]|[12][0-9]|3[01])[\/\-](\d{2,4})/);
     if (slashMatch) {
       const month = parseInt(slashMatch[1]) - 1;
       const day = parseInt(slashMatch[2]);
-      const year = parseInt(slashMatch[3]);
+      const year = expandYear(slashMatch[3]);
       date = new Date(year, month, day);
     }
 
-    // Try "Month DD, YYYY" format (with optional st/nd/rd/th)
-    const monthDayYearMatch = dateStr.match(/(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+(0?[1-9]|[12][0-9]|3[01])(st|nd|rd|th)?,?\s+(\d{4})/i);
+    // Try "DD Mon YY" format - e.g., "24 Sep 25"
+    const dayMonYearMatch = dateStr.match(/(0?[1-9]|[12][0-9]|3[01])\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+(\d{2,4})/i);
+    if (dayMonYearMatch && !date) {
+      const day = parseInt(dayMonYearMatch[1]);
+      const monthName = dayMonYearMatch[2].toLowerCase().replace('.', '');
+      const month = monthMap[monthName];
+      const year = expandYear(dayMonYearMatch[3]);
+      date = new Date(year, month, day);
+    }
+
+    // Try "Month DD, YYYY" or "Mon DD, YY" format (with optional st/nd/rd/th)
+    const monthDayYearMatch = dateStr.match(/(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+(0?[1-9]|[12][0-9]|3[01])(st|nd|rd|th)?,?\s+(\d{2,4})/i);
     if (monthDayYearMatch && !date) {
       const monthName = monthDayYearMatch[1].toLowerCase().replace('.', '');
       const month = monthMap[monthName];
       const day = parseInt(monthDayYearMatch[2]);
-      const year = parseInt(monthDayYearMatch[4]);
+      const year = expandYear(monthDayYearMatch[4]);
       date = new Date(year, month, day);
     }
 
