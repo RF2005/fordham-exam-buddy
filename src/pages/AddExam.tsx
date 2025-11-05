@@ -58,6 +58,7 @@ const AddExam = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [pastedText, setPastedText] = useState('');
   const [sectionNumber, setSectionNumber] = useState('');
+  const [activeTab, setActiveTab] = useState('manual');
 
   useEffect(() => {
     if (editId) {
@@ -407,7 +408,7 @@ const AddExam = () => {
 
         <Card className="animate-slide-up">
           <CardContent className="pt-6">
-            <Tabs defaultValue="manual" className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="manual">
                   <PenTool className="mr-2 h-4 w-4" />
@@ -750,12 +751,12 @@ Final Exam - December 10, 2024"
                   )}
 
                   {extractedExams.length > 0 && (
-                    <div className="space-y-4 bg-transparent">
+                    <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <Label>Extracted Exam Dates ({extractedExams.length})</Label>
                       </div>
 
-                      <div className="space-y-2 max-h-96 overflow-y-auto !bg-transparent p-1">
+                      <div className="space-y-2 max-h-96 overflow-y-auto bg-white p-2 rounded-lg border">
                         {extractedExams.map((exam, index) => (
                           <Card key={index} className="p-4 bg-white border-border/50">
                             <div className="flex items-start justify-between gap-3">
@@ -777,22 +778,47 @@ Final Exam - December 10, 2024"
                                   </div>
                                 )}
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  setExtractedExams(extractedExams.filter((_, i) => i !== index));
-                                }}
-                                className="h-8 w-8 text-destructive hover:text-destructive"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M3 6h18"/>
-                                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
-                                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
-                                  <line x1="10" x2="10" y1="11" y2="17"/>
-                                  <line x1="14" x2="14" y1="11" y2="17"/>
-                                </svg>
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    // Switch to manual tab and pre-fill form
+                                    setActiveTab('manual');
+                                    setFormData({
+                                      ...formData,
+                                      course: selectedCourse,
+                                      title: exam.title,
+                                      exam_date: exam.date,
+                                      notes: exam.notes || ''
+                                    });
+                                    // Remove from extracted list
+                                    setExtractedExams(extractedExams.filter((_, i) => i !== index));
+                                  }}
+                                  className="h-8 w-8"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                                    <path d="m15 5 4 4"/>
+                                  </svg>
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    setExtractedExams(extractedExams.filter((_, i) => i !== index));
+                                  }}
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M3 6h18"/>
+                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                                    <line x1="10" x2="10" y1="11" y2="17"/>
+                                    <line x1="14" x2="14" y1="11" y2="17"/>
+                                  </svg>
+                                </Button>
+                              </div>
                             </div>
                           </Card>
                         ))}
