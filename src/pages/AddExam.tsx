@@ -226,7 +226,9 @@ const AddExam = () => {
 
     // Update the exam in the extracted list
     const updatedExams = [...extractedExams];
+    const originalExam = extractedExams[editingParsedExamIndex];
     updatedExams[editingParsedExamIndex] = {
+      ...originalExam,
       title: formData.title,
       date: formData.exam_date,
       notes: formData.notes || ''
@@ -557,7 +559,7 @@ const AddExam = () => {
                       onClick={handleSaveParsedExamChanges}
                       disabled={loading}
                       variant="outline"
-                      className="w-full border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                      className="w-full border-2 border-primary text-primary hover:border-primary hover:text-primary"
                       size="lg"
                     >
                       Save Changes to Parsed Exam
