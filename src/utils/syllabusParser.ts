@@ -133,6 +133,7 @@ function extractExamDates(text: string, sectionNumber?: string): ExtractedExam[]
 
   // Exclusion patterns - skip these lines entirely
   const exclusionPatterns = [
+    /exam\s+review/i,
     /review\s+session/i,
     /office\s+hours/i,
     /grade(s)?\s+(posted|released|available)/i,
