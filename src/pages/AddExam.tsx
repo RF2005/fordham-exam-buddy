@@ -750,12 +750,12 @@ Final Exam - December 10, 2024"
                   )}
 
                   {extractedExams.length > 0 && (
-                    <div className="space-y-4">
+                    <div className="space-y-4 bg-transparent">
                       <div className="flex items-center justify-between">
                         <Label>Extracted Exam Dates ({extractedExams.length})</Label>
                       </div>
 
-                      <div className="space-y-2 max-h-96 overflow-y-auto bg-transparent">
+                      <div className="space-y-2 max-h-96 overflow-y-auto !bg-transparent p-1">
                         {extractedExams.map((exam, index) => (
                           <Card key={index} className="p-4 bg-white border-border/50">
                             <div className="flex items-start justify-between gap-3">
@@ -777,42 +777,22 @@ Final Exam - December 10, 2024"
                                   </div>
                                 )}
                               </div>
-                              <div className="flex gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                    // Pre-fill form with exam data for editing
-                                    setTitle(exam.title);
-                                    setExamDate(exam.date);
-                                    setNotes(exam.notes || '');
-                                    // Remove from extracted list
-                                    setExtractedExams(extractedExams.filter((_, i) => i !== index));
-                                  }}
-                                  className="h-8 w-8"
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
-                                    <path d="m15 5 4 4"/>
-                                  </svg>
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                    setExtractedExams(extractedExams.filter((_, i) => i !== index));
-                                  }}
-                                  className="h-8 w-8 text-destructive hover:text-destructive"
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M3 6h18"/>
-                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
-                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
-                                    <line x1="10" x2="10" y1="11" y2="17"/>
-                                    <line x1="14" x2="14" y1="11" y2="17"/>
-                                  </svg>
-                                </Button>
-                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  setExtractedExams(extractedExams.filter((_, i) => i !== index));
+                                }}
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M3 6h18"/>
+                                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                                  <line x1="10" x2="10" y1="11" y2="17"/>
+                                  <line x1="14" x2="14" y1="11" y2="17"/>
+                                </svg>
+                              </Button>
                             </div>
                           </Card>
                         ))}
