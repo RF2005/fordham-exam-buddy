@@ -839,7 +839,7 @@ Final Exam - December 10, 2024"
                                       course: selectedCourse,
                                       title: exam.title,
                                       exam_date: exam.date,
-                                      notes: exam.notes || ''
+                                      notes: ''
                                     });
                                     // Track which exam is being edited
                                     setEditingParsedExamIndex(index);
