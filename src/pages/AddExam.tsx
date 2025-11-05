@@ -59,6 +59,7 @@ const AddExam = () => {
   const [pastedText, setPastedText] = useState('');
   const [sectionNumber, setSectionNumber] = useState('');
   const [activeTab, setActiveTab] = useState('manual');
+  const [editingParsedExamIndex, setEditingParsedExamIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (editId) {
@@ -220,6 +221,39 @@ const AddExam = () => {
     }
   };
 
+  const handleSaveParsedExamChanges = () => {
+    if (editingParsedExamIndex === null) return;
+
+    // Update the exam in the extracted list
+    const updatedExams = [...extractedExams];
+    updatedExams[editingParsedExamIndex] = {
+      title: formData.title,
+      date: formData.exam_date,
+      notes: formData.notes || ''
+    };
+    setExtractedExams(updatedExams);
+
+    // Clear the form and editing state
+    setFormData({
+      course: '',
+      title: '',
+      exam_date: '',
+      start_time: '',
+      end_time: '',
+      location: '',
+      notes: '',
+      color: '#821537'
+    });
+    setEditingParsedExamIndex(null);
+
+    // Switch back to upload tab
+    setActiveTab('upload');
+
+    toast({
+      title: "Changes saved",
+      description: "The exam details have been updated in the list"
+    });
+  };
 
   const processFile = async (file: File) => {
     console.log('File uploaded:', file.name, 'Type:', file.type, 'Size:', file.size);
@@ -517,6 +551,19 @@ const AddExam = () => {
                     </div>
                   </div>
 
+                  {editingParsedExamIndex !== null && (
+                    <Button
+                      type="button"
+                      onClick={handleSaveParsedExamChanges}
+                      disabled={loading}
+                      variant="outline"
+                      className="w-full border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                      size="lg"
+                    >
+                      Save Changes to Parsed Exam
+                    </Button>
+                  )}
+
                   <Button type="submit" disabled={loading} className="w-full" size="lg">
                     {loading ? 'Saving...' : editId ? 'Update Exam' : 'Add Exam'}
                   </Button>
@@ -783,7 +830,7 @@ Final Exam - December 10, 2024"
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => {
-                                    // Switch to manual tab and pre-fill form
+                                    // Switch to manual tab and pre-fill form for customization
                                     setActiveTab('manual');
                                     setFormData({
                                       ...formData,
@@ -792,10 +839,11 @@ Final Exam - December 10, 2024"
                                       exam_date: exam.date,
                                       notes: exam.notes || ''
                                     });
-                                    // Remove from extracted list
-                                    setExtractedExams(extractedExams.filter((_, i) => i !== index));
+                                    // Track which exam is being edited
+                                    setEditingParsedExamIndex(index);
                                   }}
                                   className="h-8 w-8"
+                                  title="Customize exam details"
                                 >
                                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
@@ -809,6 +857,7 @@ Final Exam - December 10, 2024"
                                     setExtractedExams(extractedExams.filter((_, i) => i !== index));
                                   }}
                                   className="h-8 w-8 text-destructive hover:text-destructive"
+                                  title="Delete this exam"
                                 >
                                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M3 6h18"/>
