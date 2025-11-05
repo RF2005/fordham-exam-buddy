@@ -225,16 +225,30 @@ const AddExam = () => {
     setUploadedFile(file);
     toast({
       title: "File uploaded",
-      description: `${file.name} - Click "Parse with AI" to extract exam dates`
+      description: `${file.name} uploaded successfully`
     });
   };
 
-  const handleAIParseFile = async () => {
-    if (!uploadedFile) {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('handleFileUpload called');
+    const file = event.target.files?.[0];
+    console.log('Selected file:', file);
+    if (!file) {
+      console.log('No file selected');
+      return;
+    }
+    console.log('Calling processFile...');
+    await processFile(file);
+  };
+
+  // Unified parse handler for both PDF and pasted text
+  const handleParse = async () => {
+    // Check if we have either a file or pasted text
+    if (!uploadedFile && !pastedText.trim()) {
       toast({
         variant: "destructive",
-        title: "No file uploaded",
-        description: "Please upload a file first"
+        title: "Nothing to parse",
+        description: "Please upload a PDF or paste syllabus text first"
       });
       return;
     }
@@ -242,11 +256,18 @@ const AddExam = () => {
     setUploadLoading(true);
 
     try {
-      // First extract text from the file
-      const text = await parseSyllabusFile(uploadedFile);
-      console.log('Extracted text from file, length:', text.length);
+      let text = '';
 
-      // Use smart hybrid parser
+      // Extract text from PDF if uploaded
+      if (uploadedFile) {
+        text = await parseSyllabusFile(uploadedFile);
+        console.log('Extracted text from file, length:', text.length);
+      } else {
+        // Use pasted text
+        text = pastedText;
+      }
+
+      // Use parser to extract exams
       const result = await parseWithBestAvailableAI(text, sectionNumber);
       console.log('Parsed exams:', result);
 
@@ -271,72 +292,11 @@ const AddExam = () => {
         });
       }
     } catch (error: any) {
-      console.error('Error processing file:', error);
+      console.error('Error processing:', error);
       toast({
         variant: "destructive",
-        title: "Error parsing file",
-        description: error.message || "Failed to parse the uploaded file"
-      });
-      setExtractedExams([]);
-    } finally {
-      setUploadLoading(false);
-    }
-  };
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('handleFileUpload called');
-    const file = event.target.files?.[0];
-    console.log('Selected file:', file);
-    if (!file) {
-      console.log('No file selected');
-      return;
-    }
-    console.log('Calling processFile...');
-    await processFile(file);
-  };
-
-
-  const handleAIParse = async () => {
-    if (!pastedText.trim()) {
-      toast({
-        variant: "destructive",
-        title: "No text entered",
-        description: "Please paste your syllabus text before parsing"
-      });
-      return;
-    }
-
-    setUploadLoading(true);
-    try {
-      // Use smart hybrid parser
-      const result = await parseWithBestAvailableAI(pastedText, sectionNumber);
-
-      if (result.exams.length === 0) {
-        toast({
-          title: "No exams found",
-          description: "Could not find any exam dates. Try manual entry instead."
-        });
-      } else {
-        // Convert to ExtractedExam format
-        const convertedExams: ExtractedExam[] = result.exams.map(exam => ({
-          title: exam.title,
-          date: exam.date,
-          type: exam.type,
-          notes: exam.notes
-        }));
-
-        setExtractedExams(convertedExams);
-        setUploadedFile(null);
-        toast({
-          title: "Parsing complete",
-          description: `Found ${result.exams.length} exam date(s)`
-        });
-      }
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Parsing failed",
-        description: error.message || "Failed to parse text"
+        title: "Error parsing",
+        description: error.message || "Failed to parse the syllabus"
       });
       setExtractedExams([]);
     } finally {
@@ -361,26 +321,14 @@ const AddExam = () => {
     const file = event.dataTransfer.files?.[0];
     if (!file) return;
 
-    // Check both MIME type and file extension for better validation
-    const validMimeTypes = [
-      'application/pdf',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/msword',
-      'text/plain',
-      'image/png',
-      'image/jpeg',
-      'image/jpg'
-    ];
-    const validExtensions = ['.pdf', '.docx', '.doc', '.txt', '.png', '.jpg', '.jpeg'];
+    // Only accept PDF files
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
 
-    const hasMimeType = validMimeTypes.includes(file.type);
-    const hasExtension = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
-
-    if (!hasMimeType && !hasExtension) {
+    if (!isPdf) {
       toast({
         variant: "destructive",
         title: "Invalid file type",
-        description: `Please upload a PDF, DOCX, TXT, PNG, or JPG file. Got: ${file.name}`
+        description: `Please upload a PDF file only. Got: ${file.name}`
       });
       return;
     }
@@ -682,10 +630,10 @@ const AddExam = () => {
                 <div className="space-y-6">
                   <div className="text-center space-y-2">
                     <p className="text-sm text-muted-foreground">
-                      Upload your course syllabus (PDF, DOCX, TXT, or image) and we'll automatically extract exam dates
+                      Upload your course syllabus PDF or paste text directly to automatically extract exam dates
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Scanned PDFs and photos are supported
+                      Scanned PDFs are supported
                     </p>
                   </div>
 
@@ -733,13 +681,13 @@ const AddExam = () => {
                         <span className="text-base font-semibold">Click to Upload or Drag and Drop</span>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        PDF, DOCX, TXT, PNG, or JPG files
+                        PDF files only
                       </p>
                     </div>
                     <input
                       id="file-upload"
                       type="file"
-                      accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg"
+                      accept=".pdf"
                       onChange={handleFileUpload}
                       className="hidden"
                       onClick={(e) => e.stopPropagation()}
@@ -750,20 +698,6 @@ const AddExam = () => {
                       </p>
                     )}
                   </div>
-
-                  {uploadedFile && (
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleAIParseFile();
-                      }}
-                      disabled={uploadLoading}
-                      className="w-full"
-                      size="lg"
-                    >
-                      {uploadLoading ? 'Parsing...' : 'Parse Syllabus'}
-                    </Button>
-                  )}
 
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center">
@@ -795,20 +729,23 @@ Final Exam - December 10, 2024"
                         Copy and paste text from your syllabus PDF or document
                       </p>
                     </div>
+                  </div>
 
+                  {/* Unified parse button at the bottom */}
+                  {!extractedExams.length && (
                     <Button
-                      onClick={handleAIParse}
-                      disabled={uploadLoading || !pastedText.trim()}
+                      onClick={handleParse}
+                      disabled={uploadLoading || (!uploadedFile && !pastedText.trim())}
                       className="w-full"
                       size="lg"
                     >
-                      {uploadLoading ? 'Parsing...' : 'Parse Text'}
+                      {uploadLoading ? 'Parsing Syllabus...' : 'Parse Syllabus'}
                     </Button>
-                  </div>
+                  )}
 
                   {uploadLoading && (
                     <div className="text-center">
-                      <p className="text-sm text-muted-foreground">Parsing your syllabus...</p>
+                      <p className="text-sm text-muted-foreground">Extracting exam dates from your syllabus...</p>
                     </div>
                   )}
 
@@ -823,11 +760,8 @@ Final Exam - December 10, 2024"
                           <Card key={index} className="p-4">
                             <div className="flex items-start justify-between">
                               <div className="space-y-1 flex-1">
-                                <div className="font-semibold flex items-center gap-2">
+                                <div className="font-semibold">
                                   {exam.title}
-                                  <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-                                    {exam.type}
-                                  </span>
                                 </div>
                                 <div className="text-sm text-muted-foreground">
                                   {new Date(exam.date).toLocaleDateString('en-US', {

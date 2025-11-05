@@ -25,9 +25,12 @@ export async function parseWithBestAvailableAI(
   sectionNumber?: string
 ): Promise<ParseResult> {
   console.log('Starting regex-based parsing...');
+  if (sectionNumber?.trim()) {
+    console.log(`Filtering by section: ${sectionNumber}`);
+  }
 
   try {
-    const exams = parseSyllabusText(text);
+    const exams = parseSyllabusText(text, sectionNumber);
     return { exams, parserUsed: 'regex' };
   } catch (error: any) {
     console.error('Parsing failed:', error);
