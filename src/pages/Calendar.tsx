@@ -87,16 +87,20 @@ const Calendar = () => {
         // Parse date as local date to avoid timezone shifts
         const [year, month, day] = exam.exam_date.split('-').map(Number);
         const examDate = new Date(year, month - 1, day);
-        let start = examDate;
-        let end = examDate;
+        let start: Date;
+        let end: Date;
 
         // If start_time and end_time exist, create Date objects with those times
         if (exam.start_time && exam.end_time) {
           const [startHour, startMin] = exam.start_time.split(':').map(Number);
           const [endHour, endMin] = exam.end_time.split(':').map(Number);
-          
+
           start = new Date(year, month - 1, day, startHour, startMin, 0);
           end = new Date(year, month - 1, day, endHour, endMin, 0);
+        } else {
+          // For all-day events (no time specified), set to 9 AM - 10 AM for display purposes
+          start = new Date(year, month - 1, day, 9, 0, 0);
+          end = new Date(year, month - 1, day, 10, 0, 0);
         }
 
         // Get full course name from course map (case-insensitive), fallback to exam.course
@@ -246,14 +250,20 @@ const CustomAgenda = ({ events, date, courseMap }: { events: CalendarEvent[], da
         <tbody>
           {filteredEvents.map((event, idx) => {
             const exam = event.resource;
-            const startTime = exam.start_time ? moment(exam.start_time, 'HH:mm').format('h:mm a') : '';
-            const endTime = exam.end_time ? moment(exam.end_time, 'HH:mm').format('h:mm a') : '';
-            const timeRange = startTime && endTime ? `${startTime} – ${endTime}` : 'All Day';
+
+            // Format time properly - start_time is already in "HH:mm" format
+            let timeRange = 'All Day';
+            if (exam.start_time && exam.end_time) {
+              const startTime = moment(exam.start_time, 'HH:mm').format('h:mm A');
+              const endTime = moment(exam.end_time, 'HH:mm').format('h:mm A');
+              timeRange = `${startTime} – ${endTime}`;
+            }
+
             const courseName = courseMap.get(exam.course) || courseMap.get(exam.course.toUpperCase()) || exam.course;
-            
+
             return (
-              <tr 
-                key={idx} 
+              <tr
+                key={idx}
                 className="cursor-pointer hover:bg-accent/50"
                 onClick={() => navigate(`/add-exam?edit=${event.id}`)}
               >
