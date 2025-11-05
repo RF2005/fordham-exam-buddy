@@ -755,9 +755,9 @@ Final Exam - December 10, 2024"
                         <Label>Extracted Exam Dates ({extractedExams.length})</Label>
                       </div>
 
-                      <div className="space-y-2 max-h-96 overflow-y-auto">
+                      <div className="space-y-2 max-h-96 overflow-y-auto bg-transparent">
                         {extractedExams.map((exam, index) => (
-                          <Card key={index} className="p-4 bg-white">
+                          <Card key={index} className="p-4 bg-white border-border/50">
                             <div className="flex items-start justify-between gap-3">
                               <div className="space-y-1 flex-1">
                                 <div className="font-semibold">
