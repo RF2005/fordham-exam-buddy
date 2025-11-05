@@ -757,8 +757,8 @@ Final Exam - December 10, 2024"
 
                       <div className="space-y-2 max-h-96 overflow-y-auto">
                         {extractedExams.map((exam, index) => (
-                          <Card key={index} className="p-4">
-                            <div className="flex items-start justify-between">
+                          <Card key={index} className="p-4 bg-white">
+                            <div className="flex items-start justify-between gap-3">
                               <div className="space-y-1 flex-1">
                                 <div className="font-semibold">
                                   {exam.title}
@@ -776,6 +776,42 @@ Final Exam - December 10, 2024"
                                     {exam.notes}
                                   </div>
                                 )}
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    // Pre-fill form with exam data for editing
+                                    setTitle(exam.title);
+                                    setExamDate(exam.date);
+                                    setNotes(exam.notes || '');
+                                    // Remove from extracted list
+                                    setExtractedExams(extractedExams.filter((_, i) => i !== index));
+                                  }}
+                                  className="h-8 w-8"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                                    <path d="m15 5 4 4"/>
+                                  </svg>
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    setExtractedExams(extractedExams.filter((_, i) => i !== index));
+                                  }}
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M3 6h18"/>
+                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                                    <line x1="10" x2="10" y1="11" y2="17"/>
+                                    <line x1="14" x2="14" y1="11" y2="17"/>
+                                  </svg>
+                                </Button>
                               </div>
                             </div>
                           </Card>
