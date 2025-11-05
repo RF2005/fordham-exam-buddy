@@ -565,7 +565,7 @@ const AddExam = () => {
                   )}
 
                   <Button type="submit" disabled={loading} className="w-full" size="lg">
-                    {loading ? 'Saving...' : editId ? 'Update Exam' : 'Add Exam'}
+                    {loading ? 'Saving...' : editId ? 'Update Exam' : 'Add Exam to Calendar'}
                   </Button>
                 </form>
               </TabsContent>
