@@ -92,6 +92,7 @@ export type Database = {
           end_time: string
           exam_date: string
           id: string
+          meeting_pattern: string | null
           notes: string | null
           semester: string
           start_time: string
@@ -99,15 +100,16 @@ export type Database = {
           year: number
         }
         Insert: {
-          course_number: string
+          course_number?: string
           created_at?: string
           end_time: string
           exam_date: string
           id?: string
+          meeting_pattern?: string | null
           notes?: string | null
           semester: string
           start_time: string
-          subject: string
+          subject?: string
           year: number
         }
         Update: {
@@ -116,6 +118,7 @@ export type Database = {
           end_time?: string
           exam_date?: string
           id?: string
+          meeting_pattern?: string | null
           notes?: string | null
           semester?: string
           start_time?: string

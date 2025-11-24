@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navigation from "@/components/Navigation";
 import { parseSyllabusFile, ExtractedExam } from "@/utils/syllabusParser";
 import { parseWithBestAvailableAI, getParserName } from "@/utils/hybridAiParser";
+import { MultiSelect } from "@/components/ui/multi-select";
 
 const examSchema = z.object({
   course: z.string().min(1, "Course is required").max(100),
@@ -44,9 +45,9 @@ const AddExam = () => {
     color: '#821537'
   });
   
-  // Lookup state
-  const [lookupSubject, setLookupSubject] = useState('');
-  const [lookupCourse, setLookupCourse] = useState('');
+  // Lookup state - Meeting Pattern Based
+  const [availablePatterns, setAvailablePatterns] = useState<string[]>([]);
+  const [selectedPatterns, setSelectedPatterns] = useState<string[]>([]);
   const [lookupResults, setLookupResults] = useState<any[]>([]);
   const [lookupLoading, setLookupLoading] = useState(false);
 
@@ -66,6 +67,31 @@ const AddExam = () => {
       fetchExam(editId);
     }
   }, [editId]);
+
+  // Fetch available meeting patterns when lookup tab is accessed
+  useEffect(() => {
+    if (activeTab === 'lookup') {
+      fetchAvailablePatterns();
+    }
+  }, [activeTab]);
+
+  const fetchAvailablePatterns = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('final_exam_schedules')
+        .select('meeting_pattern')
+        .not('meeting_pattern', 'is', null)
+        .order('meeting_pattern');
+
+      if (error) throw error;
+
+      // Extract unique patterns
+      const uniquePatterns = [...new Set(data.map(item => item.meeting_pattern))];
+      setAvailablePatterns(uniquePatterns);
+    } catch (error: any) {
+      console.error('Error fetching patterns:', error);
+    }
+  };
 
   const fetchExam = async (id: string) => {
     try {
@@ -97,11 +123,11 @@ const AddExam = () => {
   };
 
   const handleLookup = async () => {
-    if (!lookupSubject || !lookupCourse) {
+    if (selectedPatterns.length === 0) {
       toast({
         variant: "destructive",
-        title: "Missing information",
-        description: "Please enter both subject and course number"
+        title: "No patterns selected",
+        description: "Please select at least one class meeting pattern"
       });
       return;
     }
@@ -111,15 +137,14 @@ const AddExam = () => {
       const { data, error } = await supabase
         .from('final_exam_schedules')
         .select('*')
-        .ilike('subject', lookupSubject)
-        .ilike('course_number', lookupCourse);
+        .in('meeting_pattern', selectedPatterns);
 
       if (error) throw error;
 
       if (!data || data.length === 0) {
         toast({
           title: "No results found",
-          description: "No scheduled finals found for this course. Try manual entry or syllabus upload."
+          description: "No scheduled finals found for the selected patterns."
         });
         setLookupResults([]);
       } else {
@@ -137,8 +162,11 @@ const AddExam = () => {
   };
 
   const selectLookupResult = (result: any) => {
+    const courseInput = result.meeting_pattern ? `Class: ${result.meeting_pattern}` :
+                        result.subject && result.course_number ? `${result.subject} ${result.course_number}` : '';
+
     setFormData({
-      course: `${result.subject} ${result.course_number}`,
+      course: courseInput,
       title: 'Final Exam',
       exam_date: result.exam_date,
       start_time: result.start_time || '09:00',
@@ -574,104 +602,106 @@ const AddExam = () => {
 
               <TabsContent value="lookup" className="space-y-4">
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="subject">Subject</Label>
-                      <Input
-                        id="subject"
-                        placeholder="e.g., CISC"
-                        value={lookupSubject}
-                        onChange={(e) => setLookupSubject(e.target.value.toUpperCase())}
-                      />
+                  <div className="space-y-2">
+                    <Label>Select Your Class Meeting Times</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Choose when your classes meet to find their final exam dates
+                    </p>
+                    <div className="p-3 bg-muted/50 rounded-md text-xs text-muted-foreground space-y-1">
+                      <p><strong>Note:</strong> R = Thursday (e.g., MR means Monday/Thursday)</p>
+                      <p>E and C section classes are not included. Check with your instructor for exam details.</p>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="courseNum">Course Number</Label>
-                      <Input
-                        id="courseNum"
-                        placeholder="e.g., 1600"
-                        value={lookupCourse}
-                        onChange={(e) => setLookupCourse(e.target.value)}
-                      />
-                    </div>
+                    <MultiSelect
+                      options={availablePatterns}
+                      selected={selectedPatterns}
+                      onChange={setSelectedPatterns}
+                      placeholder="Select class meeting times..."
+                      className="w-full"
+                    />
                   </div>
 
                   <Button
-                    onClick={handleLookup} 
-                    disabled={lookupLoading}
+                    onClick={handleLookup}
+                    disabled={lookupLoading || selectedPatterns.length === 0}
                     className="w-full"
                   >
-                    {lookupLoading ? 'Searching...' : 'Search Schedule'}
+                    {lookupLoading ? 'Searching...' : 'Find Final Exam Times'}
                   </Button>
 
                   {lookupResults.length > 0 && (
                     <div className="space-y-2">
-                      <Label>Select an exam schedule:</Label>
-                      <div className="space-y-2">
-                        {lookupResults.map((result) => (
-                          <Card 
-                            key={result.id} 
-                            className="p-4 cursor-pointer hover:bg-accent transition-colors"
-                            onClick={() => selectLookupResult(result)}
-                          >
-                            <div className="font-semibold">
-                              {result.subject} {result.course_number}
+                      <Label>Your Final Exam Schedule:</Label>
+                      <div className="space-y-3">
+                        {lookupResults.map((result, index) => (
+                          <Card key={result.id} className="p-4">
+                            <div className="space-y-3">
+                              <div>
+                                <div className="font-semibold text-lg">
+                                  {result.meeting_pattern}
+                                </div>
+                                <div className="text-sm text-muted-foreground mt-1">
+                                  Final Exam: {new Date(result.exam_date + 'T00:00:00').toLocaleDateString('en-US', {
+                                    weekday: 'long',
+                                    month: 'long',
+                                    day: 'numeric'
+                                  })}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  Time: {result.start_time?.slice(0, 5)} - {result.end_time?.slice(0, 5)}
+                                </div>
+                                {result.notes && (
+                                  <div className="text-sm mt-1 text-muted-foreground">{result.notes}</div>
+                                )}
+                              </div>
+
+                              <Button
+                                onClick={async () => {
+                                  const examData = {
+                                    course: result.meeting_pattern ? `Class: ${result.meeting_pattern}` : '',
+                                    title: 'Final Exam',
+                                    exam_date: result.exam_date,
+                                    start_time: result.start_time || '09:00',
+                                    end_time: result.end_time || '11:00',
+                                    location: '',
+                                    notes: result.notes || '',
+                                    color: '#821537'
+                                  };
+
+                                  try {
+                                    setLoading(true);
+                                    const { data: { user } } = await supabase.auth.getUser();
+                                    if (!user) throw new Error('Not authenticated');
+
+                                    const { error } = await supabase
+                                      .from('exams')
+                                      .insert([{ ...examData, user_id: user.id }]);
+
+                                    if (error) throw error;
+
+                                    toast({
+                                      title: "Success!",
+                                      description: "Exam added to your calendar"
+                                    });
+                                  } catch (error: any) {
+                                    toast({
+                                      variant: "destructive",
+                                      title: "Error",
+                                      description: error.message
+                                    });
+                                  } finally {
+                                    setLoading(false);
+                                  }
+                                }}
+                                disabled={loading}
+                                className="w-full"
+                              >
+                                Add Exam to Calendar
+                              </Button>
                             </div>
-                            <div className="text-sm text-muted-foreground">
-                              {new Date(result.exam_date).toLocaleDateString()} • {result.start_time} - {result.end_time}
-                            </div>
-                            {result.notes && (
-                              <div className="text-sm mt-1">{result.notes}</div>
-                            )}
                           </Card>
                         ))}
                       </div>
                     </div>
-                  )}
-
-                  {lookupResults.length > 0 && formData.exam_date && (
-                    <form onSubmit={handleSubmit} className="space-y-4 pt-4 border-t">
-                      <div className="space-y-2">
-                        <Label htmlFor="review-course">Course</Label>
-                        <Input
-                          id="review-course"
-                          value={formData.course}
-                          onChange={(e) => setFormData({ ...formData, course: e.target.value })}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="review-title">Exam Title</Label>
-                        <Input
-                          id="review-title"
-                          value={formData.title}
-                          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="review-date">Exam Date</Label>
-                        <Input
-                          id="review-date"
-                          type="date"
-                          value={formData.exam_date}
-                          onChange={(e) => setFormData({ ...formData, exam_date: e.target.value })}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="review-notes">Notes</Label>
-                        <Textarea
-                          id="review-notes"
-                          value={formData.notes}
-                          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                          rows={3}
-                        />
-                      </div>
-                      
-                      <Button type="submit" disabled={loading} className="w-full">
-                        {loading ? 'Saving...' : 'Add Exam'}
-                      </Button>
-                    </form>
                   )}
                 </div>
               </TabsContent>
