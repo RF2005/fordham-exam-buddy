@@ -4,7 +4,6 @@ import Tesseract from 'tesseract.js';
  * Extract text from an image or PDF using Tesseract.js (browser-based OCR)
  */
 export async function extractTextWithOCR(file: File): Promise<string> {
-  console.log('Using Tesseract.js OCR to extract text from:', file.name);
 
   try {
     const { data: { text } } = await Tesseract.recognize(
@@ -13,7 +12,6 @@ export async function extractTextWithOCR(file: File): Promise<string> {
       {
         logger: (m) => {
           if (m.status === 'recognizing text') {
-            console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
           }
         }
       }
@@ -23,10 +21,8 @@ export async function extractTextWithOCR(file: File): Promise<string> {
       throw new Error('No text could be extracted from the file. Please ensure the image is clear and readable.');
     }
 
-    console.log(`Tesseract.js extracted ${text.length} characters`);
     return text;
   } catch (error: any) {
-    console.error('Tesseract.js OCR error:', error);
     throw new Error(`OCR extraction failed: ${error.message || 'Unknown error'}`);
   }
 }

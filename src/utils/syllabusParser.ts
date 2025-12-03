@@ -31,7 +31,6 @@ export async function parseSyllabusFile(file: File): Promise<string> {
     const text = await parsePDF(file);
     return text;
   } catch (error) {
-    console.error('Error parsing syllabus:', error);
     throw error;
   }
 }
@@ -90,13 +89,11 @@ async function parsePDF(file: File): Promise<string> {
 
     // Check if the extracted text is too short (likely scanned PDF)
     if (isLikelyScannedPDF(fullText)) {
-      console.log('PDF appears to be scanned (minimal text extracted), using OCR fallback');
       return await extractTextWithOCR(file);
     }
 
     return fullText;
   } catch (error) {
-    console.error('PDF text extraction failed, trying OCR:', error);
     // If PDF parsing fails completely, try OCR as fallback
     return await extractTextWithOCR(file);
   }
@@ -111,8 +108,6 @@ function extractExamDates(text: string, sectionNumber?: string): ExtractedExam[]
   const exams: ExtractedExam[] = [];
   const lines = text.split('\n');
 
-  console.log(`[Parser] Total lines to parse: ${lines.length}`);
-  console.log(`[Parser] First 10 lines:`, lines.slice(0, 10));
 
   // Normalize section number for comparison (trim and uppercase)
   const targetSection = sectionNumber?.trim().toUpperCase();
@@ -239,7 +234,6 @@ function extractExamDates(text: string, sectionNumber?: string): ExtractedExam[]
         assignmentName = assignmentName.substring(lastAsteriskIndex + 1).trim();
       }
 
-      console.log(`[Parser] Found "due" pattern on line ${i}: "${assignmentName}" due ${dateString}`);
 
       const standardDate = parseAndStandardizeDate(dateString);
       if (standardDate) {
@@ -259,7 +253,6 @@ function extractExamDates(text: string, sectionNumber?: string): ExtractedExam[]
           notes: line.trim().substring(0, 300)
         });
 
-        console.log(`[Parser] Added assignment: ${assignmentName} on ${standardDate}`);
         continue; // Skip to next line
       }
     }
@@ -269,7 +262,6 @@ function extractExamDates(text: string, sectionNumber?: string): ExtractedExam[]
     for (const { pattern, type } of examKeywords) {
       if (pattern.test(line)) {
         examType = type;
-        console.log(`[Parser] Found exam keyword on line ${i}: "${line}" -> type: ${type}`);
         break;
       }
     }
@@ -325,12 +317,10 @@ function extractExamDates(text: string, sectionNumber?: string): ExtractedExam[]
     }
 
     if (dateFound && extractedDate) {
-      console.log(`[Parser] Found date for exam: ${extractedDate}`);
       // Convert date to YYYY-MM-DD format
       const standardDate = parseAndStandardizeDate(extractedDate);
 
       if (standardDate) {
-        console.log(`[Parser] Standardized date: ${standardDate}`);
         // Extract just the exam name from the line, not the whole line
         let title = '';
 
@@ -413,7 +403,6 @@ function parseRecitationSchedule(text: string, sectionNumber: string): Recitatio
   const lines = text.split('\n');
   const normalizedSection = sectionNumber.trim().toUpperCase();
 
-  console.log(`[Recitation Parser] Looking for section: ${normalizedSection}`);
 
   // Day abbreviation to weekday number mapping
   const dayMap: Record<string, number> = {
@@ -436,12 +425,10 @@ function parseRecitationSchedule(text: string, sectionNumber: string): Recitatio
     const line = lines[i];
 
     if (/^recitations\s/i.test(line.trim())) {
-      console.log(`[Recitation Parser] Found recitations row on line ${i}: "${line}"`);
 
       // Pattern: "M at 4:00PM" or "W at 10:00-10:50AM"
       const dayMatches = [...line.matchAll(/\b([MTWFS]|TH|MON|TUE|TUES|WED|THUR|THURS|FRI|SAT|SUN)\s+at\s+(\d{1,2}:\d{2})/gi)];
 
-      console.log(`[Recitation Parser] Found ${dayMatches.length} day/time matches in recitations row`);
 
       if (dayMatches.length > 0) {
         // Need to figure out which column is for which section
@@ -449,7 +436,6 @@ function parseRecitationSchedule(text: string, sectionNumber: string): Recitatio
         for (let k = Math.max(0, i - 10); k < i; k++) {
           const headerLine = lines[k];
           if (headerLine.toUpperCase().includes('SECTION')) {
-            console.log(`[Recitation Parser] Found section header on line ${k}: "${headerLine}"`);
 
             // Now determine which day/time corresponds to which section based on position
             // For section L02, we want the second day/time if there are two
@@ -467,7 +453,6 @@ function parseRecitationSchedule(text: string, sectionNumber: string): Recitatio
               const dayOfWeek = dayMap[dayAbbr];
 
               if (dayOfWeek !== undefined) {
-                console.log(`[Recitation Parser] Found recitation for ${normalizedSection}: Day ${dayOfWeek} (${dayAbbr}) at ${time}`);
                 return { section: normalizedSection, dayOfWeek, time };
               }
             }
@@ -477,7 +462,6 @@ function parseRecitationSchedule(text: string, sectionNumber: string): Recitatio
     }
   }
 
-  console.log(`[Recitation Parser] Could not find recitation schedule for ${normalizedSection}`);
   return null;
 }
 
@@ -492,27 +476,22 @@ function generateWeeklyQuizzes(text: string, sectionNumber: string, lines: strin
                           (/recitation/i.test(text) && /quiz(zes)?/i.test(text));
 
   if (!hasWeeklyQuizzes) {
-    console.log('[Quiz Generator] Weekly quiz detection failed');
     return quizzes;
   }
 
-  console.log('[Quiz Generator] Detected weekly quizzes at recitation');
 
   // Parse recitation schedule for this section
   const recitation = parseRecitationSchedule(text, sectionNumber);
   if (!recitation) {
-    console.log('[Quiz Generator] Could not find recitation schedule for section');
     return quizzes;
   }
 
   // Find semester start and end dates from schedule
   const { startDate, endDate, breakWeeks } = findSemesterDates(lines);
   if (!startDate || !endDate) {
-    console.log('[Quiz Generator] Could not determine semester dates');
     return quizzes;
   }
 
-  console.log(`[Quiz Generator] Generating quizzes from ${startDate} to ${endDate} on day ${recitation.dayOfWeek}`);
 
   // Generate quiz for each recitation day (skip first week and break weeks)
   let currentDate = new Date(startDate);
@@ -552,7 +531,6 @@ function generateWeeklyQuizzes(text: string, sectionNumber: string, lines: strin
     currentDate.setDate(currentDate.getDate() + 7);
   }
 
-  console.log(`[Quiz Generator] Generated ${quizzes.length} weekly quizzes`);
   return quizzes;
 }
 
@@ -579,14 +557,12 @@ function findSemesterDates(lines: string[]): { startDate: Date | null, endDate: 
     // Look for lines that contain "Date" followed by "Section" or "Topic"
     if ((/^date\s/i.test(line.trim()) && /(section|topic)/i.test(line)) ||
         /^date\s+.*\s+(section|topic)/i.test(line.trim())) {
-      console.log(`[Semester Dates] Found schedule table header on line ${i}: "${line}"`);
       inSchedule = true;
       continue;
     }
 
     // Stop when we hit academic integrity or other policy sections (but not grading, which comes before schedule)
     if (inSchedule && /(academic|integrity|students\s+with\s+disabilities)/i.test(line)) {
-      console.log(`[Semester Dates] Stopping at line ${i}: "${line}"`);
       break;
     }
 
@@ -776,7 +752,6 @@ function parseAndStandardizeDate(dateStr: string): string | null {
 
     return null;
   } catch (error) {
-    console.error('Error parsing date:', dateStr, error);
     return null;
   }
 }
