@@ -564,7 +564,9 @@ function findSemesterDates(lines: string[]): { startDate: Date | null, endDate: 
   let endDate: Date | null = null;
   const breakWeeks: Date[] = [];
 
-  const datePattern = /(0?[1-9]|1[0-2])[\/\-](0?[1-9]|[12][0-9]|3[01])/g;
+  // Match M/D or M/DD, but use lookahead to ensure we get the full date
+  // This prevents "8/27" from matching as "8/2" + leftover "7"
+  const datePattern = /(0?[1-9]|1[0-2])[\/\-](0?[1-9]|[12][0-9]|3[01])(?=\s|	|$)/g;
 
   // Find the schedule section (look for "Date" or "Class schedule" header)
   let inSchedule = false;
