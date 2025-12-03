@@ -122,6 +122,7 @@ function extractExamDates(text: string, sectionNumber?: string): ExtractedExam[]
   const examKeywords = [
     { pattern: /\b(midterm|mid-term|mid term)\b/i, type: 'midterm' as const },
     { pattern: /\bfinal\s+(exam|test|essay)\b/i, type: 'exam' as const },
+    { pattern: /\bpr[ée]cis\b/i, type: 'project' as const },  // "Précis" or "Precis" - academic summary assignment
     { pattern: /\bessay\s+\d+/i, type: 'project' as const },  // "Essay 1", "Essay 2", etc.
     { pattern: /\bquiz(zes)?\b/i, type: 'quiz' as const },
     { pattern: /\btest\b/i, type: 'test' as const },
@@ -136,6 +137,8 @@ function extractExamDates(text: string, sectionNumber?: string): ExtractedExam[]
     /exam\s+review/i,
     /review\s+session/i,
     /office\s+hours/i,
+    /participation/i,  // Skip participation self-assessments
+    /\bTBD\b/i,  // Skip items with "TBD" dates
     /grade(s)?\s+(posted|released|available)/i,
     /holiday|break|no\s+class|cancelled/i,
     /syllabus\s+updated/i,
