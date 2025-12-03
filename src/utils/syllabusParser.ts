@@ -223,7 +223,48 @@ function extractExamDates(text: string, sectionNumber?: string): ExtractedExam[]
       continue;
     }
 
-    // Check if line contains exam keyword
+    // NEW APPROACH: Check for "[assignment name] due [date]" pattern first
+    // This captures any assignment that has "due" followed by a date
+    const duePattern = /\*?(.+?)\s+due\s+(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)/i;
+    const dueMatch = line.match(duePattern);
+
+    if (dueMatch) {
+      let assignmentName = dueMatch[1].trim();
+      const dateString = dueMatch[2];
+
+      // Clean up the assignment name - extract just the assignment part after the asterisk
+      // Pattern: "reading text *Assignment Name due date" -> extract "Assignment Name"
+      const asteriskMatch = assignmentName.match(/\*(.+)$/);
+      if (asteriskMatch) {
+        assignmentName = asteriskMatch[1].trim();
+      }
+
+      console.log(`[Parser] Found "due" pattern on line ${i}: "${assignmentName}" due ${dateString}`);
+
+      const standardDate = parseAndStandardizeDate(dateString);
+      if (standardDate) {
+        // Determine assignment type based on name
+        let type: ExtractedExam['type'] = 'project';
+        if (/quiz/i.test(assignmentName)) type = 'quiz';
+        else if (/test/i.test(assignmentName)) type = 'test';
+        else if (/exam/i.test(assignmentName)) type = 'exam';
+        else if (/midterm|mid-term/i.test(assignmentName)) type = 'midterm';
+        else if (/final/i.test(assignmentName)) type = 'final';
+        else if (/presentation/i.test(assignmentName)) type = 'presentation';
+
+        exams.push({
+          title: assignmentName,
+          date: standardDate,
+          type: type,
+          notes: line.trim().substring(0, 300)
+        });
+
+        console.log(`[Parser] Added assignment: ${assignmentName} on ${standardDate}`);
+        continue; // Skip to next line
+      }
+    }
+
+    // FALLBACK: Check if line contains exam keyword (old approach)
     let examType: ExtractedExam['type'] | null = null;
     for (const { pattern, type } of examKeywords) {
       if (pattern.test(line)) {
