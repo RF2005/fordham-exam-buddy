@@ -137,7 +137,6 @@ function extractExamDates(text: string, sectionNumber?: string): ExtractedExam[]
     /exam\s+review/i,
     /review\s+session/i,
     /office\s+hours/i,
-    /participation/i,  // Skip participation self-assessments
     /\bTBD\b/i,  // Skip items with "TBD" dates
     /grade(s)?\s+(posted|released|available)/i,
     /holiday|break|no\s+class|cancelled/i,
