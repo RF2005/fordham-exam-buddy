@@ -88,7 +88,7 @@ const Dashboard = () => {
     const urgent = upcomingExams.filter(exam => {
       const examDate = new Date(exam.exam_date + 'T00:00:00');
       const daysUntil = Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-      return daysUntil <= 7 && daysUntil >= 0;
+      return daysUntil <= 3 && daysUntil >= 0;
     });
 
     return {
