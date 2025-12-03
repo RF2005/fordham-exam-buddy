@@ -231,11 +231,12 @@ function extractExamDates(text: string, sectionNumber?: string): ExtractedExam[]
       let assignmentName = dueMatch[1].trim();
       const dateString = dueMatch[2];
 
-      // Clean up the assignment name - extract just the assignment part after the asterisk
+      // Clean up the assignment name - extract just the assignment part after the LAST asterisk
       // Pattern: "reading text *Assignment Name due date" -> extract "Assignment Name"
-      const asteriskMatch = assignmentName.match(/\*(.+)$/);
-      if (asteriskMatch) {
-        assignmentName = asteriskMatch[1].trim();
+      // Handle multiple asterisks by taking the text after the last one
+      const lastAsteriskIndex = assignmentName.lastIndexOf('*');
+      if (lastAsteriskIndex !== -1) {
+        assignmentName = assignmentName.substring(lastAsteriskIndex + 1).trim();
       }
 
       console.log(`[Parser] Found "due" pattern on line ${i}: "${assignmentName}" due ${dateString}`);
